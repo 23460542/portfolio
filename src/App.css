@@ -83,7 +83,8 @@
 }
 
 .hero {
-  padding: 52px 0 28px;
+  min-height: calc(100svh - 86px);
+  padding: 42px 0 28px;
 }
 
 .binary-band {
@@ -112,21 +113,22 @@
   transform: translateX(-22px);
 }
 
-.hero-grid {
+.hero-wave-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
-  align-items: end;
+  align-items: center;
   gap: 24px;
 }
 
-.hero-grid > *,
+.hero-wave-layout > *,
 .about-copy > *,
 .section-header > * {
   min-width: 0;
 }
 
-.hero-copy {
-  max-width: 690px;
+.hero-wave-copy {
+  position: relative;
+  min-height: 560px;
 }
 
 .eyebrow,
@@ -138,22 +140,45 @@
   text-transform: uppercase;
 }
 
-.hero h1 {
-  max-width: 700px;
-  margin: 0;
-  color: var(--paper);
-  font-size: clamp(2.5rem, 8vw, 6.2rem);
-  line-height: 0.88;
-  overflow-wrap: anywhere;
-  text-transform: uppercase;
+.wave-scene {
+  position: relative;
+  min-height: clamp(420px, 62vh, 660px);
+  margin: 16px 0 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: crosshair;
 }
 
-.hero-copy > p:last-child {
-  max-width: 580px;
-  margin: 22px 0 0;
-  color: var(--ink-soft);
-  font-size: clamp(0.95rem, 1.8vw, 1.08rem);
-  overflow-wrap: anywhere;
+.wave-scene::before,
+.wave-scene::after {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  content: '';
+}
+
+.wave-scene::before {
+  background: radial-gradient(circle at 52% 47%, rgba(123, 255, 157, 0.18), transparent 34%);
+  mask-image: radial-gradient(ellipse at 50% 50%, #000 0 58%, transparent 78%);
+}
+
+.wave-scene::after {
+  opacity: 0.4;
+  background-image:
+    linear-gradient(rgba(242, 255, 224, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(242, 255, 224, 0.05) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse at 50% 50%, #000 0 58%, transparent 78%);
+}
+
+.wave-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 18px rgba(123, 255, 157, 0.28));
 }
 
 .hero-terminal,
@@ -574,7 +599,7 @@
     justify-content: flex-start;
   }
 
-  .hero-grid,
+  .hero-wave-layout,
   .about-copy,
   .education-list {
     grid-template-columns: 1fr;
@@ -582,6 +607,14 @@
 
   .hero {
     padding-top: 28px;
+  }
+
+  .hero-wave-copy {
+    min-height: 510px;
+  }
+
+  .wave-scene {
+    min-height: 440px;
   }
 
   .section-header {
@@ -649,10 +682,12 @@
     max-width: 460px;
   }
 
-  .hero h1 {
-    max-width: 100%;
-    font-size: clamp(2.15rem, 11vw, 2.85rem);
-    line-height: 0.94;
+  .hero-wave-copy {
+    min-height: 470px;
+  }
+
+  .wave-scene {
+    min-height: 400px;
   }
 
   .metric-grid {

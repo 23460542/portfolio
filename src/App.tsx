@@ -1,5 +1,6 @@
 import { ExternalLink, FileText, GitBranch, Maximize2, Minus, Move, Plus, RotateCcw } from 'lucide-react'
-import { type CSSProperties, type PointerEvent, useMemo, useState } from 'react'
+import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import * as THREE from 'three'
 import './App.css'
 
 type Point = {
@@ -215,6 +216,146 @@ function BinaryBand() {
   )
 }
 
+function WaveMeshHero() {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const container = containerRef.current
+
+    if (!container) {
+      return
+    }
+
+    const host = container
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      powerPreference: 'high-performance',
+    })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
+    renderer.outputColorSpace = THREE.SRGBColorSpace
+    renderer.domElement.className = 'wave-canvas'
+    renderer.domElement.setAttribute('aria-label', 'Interactive green 3D wave mesh')
+    host.appendChild(renderer.domElement)
+
+    const scene = new THREE.Scene()
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
+    camera.position.set(0, -0.34, 5.35)
+    camera.lookAt(0, 0, 0)
+
+    const uniforms = {
+      uTime: { value: 0 },
+      uMouse: { value: new THREE.Vector2(0, 0) },
+      uHover: { value: 0.18 },
+    }
+
+    const geometry = new THREE.PlaneGeometry(6.6, 3.8, 132, 76)
+    const material = new THREE.ShaderMaterial({
+      fragmentShader: `
+        varying float vElevation;
+
+        void main() {
+          float pulse = clamp(vElevation * 1.4 + 0.55, 0.0, 1.0);
+          vec3 deep = vec3(0.25, 0.95, 0.48);
+          vec3 hot = vec3(0.9, 1.0, 0.72);
+          vec3 color = mix(deep, hot, pulse);
+          gl_FragColor = vec4(color, 0.82);
+        }
+      `,
+      transparent: true,
+      uniforms,
+      vertexShader: `
+        uniform float uTime;
+        uniform vec2 uMouse;
+        uniform float uHover;
+        varying float vElevation;
+
+        void main() {
+          vec3 pos = position;
+          vec2 normalized = vec2(position.x / 3.3, position.y / 1.9);
+          float baseWave = sin(position.x * 2.05 + uTime * 0.85) * 0.16;
+          baseWave += sin(position.y * 3.7 - uTime * 1.15) * 0.08;
+          baseWave += sin((position.x + position.y) * 1.65 + uTime * 0.55) * 0.1;
+
+          float dist = distance(normalized, uMouse);
+          float cursorRipple = sin(dist * 24.0 - uTime * 5.2) * exp(-dist * 4.4) * 0.58 * uHover;
+          vec2 push = normalize(normalized - uMouse + 0.0001) * exp(-dist * 5.0) * 0.16 * uHover;
+
+          pos.xy += push;
+          pos.z = baseWave + cursorRipple;
+          vElevation = pos.z;
+
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      wireframe: true,
+    })
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.rotation.x = -0.58
+    mesh.rotation.z = -0.04
+    scene.add(mesh)
+
+    let frameId = 0
+    let targetHover = 0.18
+    const targetMouse = new THREE.Vector2(0, 0)
+    const clock = new THREE.Clock()
+
+    function resize() {
+      const { width, height } = host.getBoundingClientRect()
+      const safeWidth = Math.max(width, 1)
+      const safeHeight = Math.max(height, 1)
+
+      renderer.setSize(safeWidth, safeHeight, false)
+      camera.aspect = safeWidth / safeHeight
+      camera.updateProjectionMatrix()
+    }
+
+    function onPointerMove(event: globalThis.PointerEvent) {
+      const rect = host.getBoundingClientRect()
+      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+      const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
+
+      targetMouse.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1))
+      targetHover = 1
+    }
+
+    function onPointerLeave() {
+      targetMouse.set(0, 0)
+      targetHover = 0.18
+    }
+
+    function animate() {
+      uniforms.uTime.value = clock.getElapsedTime()
+      uniforms.uMouse.value.lerp(targetMouse, 0.08)
+      uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.08)
+      mesh.rotation.z = Math.sin(uniforms.uTime.value * 0.24) * 0.045 - 0.04
+      renderer.render(scene, camera)
+      frameId = window.requestAnimationFrame(animate)
+    }
+
+    const resizeObserver = new ResizeObserver(resize)
+    resizeObserver.observe(host)
+    host.addEventListener('pointermove', onPointerMove)
+    host.addEventListener('pointerleave', onPointerLeave)
+    resize()
+    animate()
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+      host.removeEventListener('pointermove', onPointerMove)
+      host.removeEventListener('pointerleave', onPointerLeave)
+      geometry.dispose()
+      material.dispose()
+      renderer.dispose()
+      renderer.domElement.remove()
+    }
+  }, [])
+
+  return <div className="wave-scene" ref={containerRef} />
+}
+
 function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
   return (
     <div className="section-header">
@@ -374,14 +515,10 @@ function App() {
 
       <section className="hero" id="top">
         <BinaryBand />
-        <div className="hero-grid">
-          <div className="hero-copy">
+        <div className="hero-wave-layout">
+          <div className="hero-wave-copy">
             <p className="eyebrow">coding from australia / market systems / data tools</p>
-            <h1>James builds compact dashboards for noisy market data.</h1>
-            <p>
-              A small green terminal garden for polym, AITrade, and the next set of decision tools.
-              Fake signals today. Real feeds soon.
-            </p>
+            <WaveMeshHero />
           </div>
 
           <aside className="hero-terminal" aria-label="System status">
@@ -389,7 +526,9 @@ function App() {
               <span>portfolio.boot</span>
               <span>v0.1</span>
             </div>
-            <pre>{`> load /projects
+            <pre>{`> boot /mesh
+WAVE_FIELD active
+> load /projects
 OK 3 dashboard panels
 > attach resume.pdf
 PENDING placeholder
