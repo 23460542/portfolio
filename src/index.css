@@ -1,0 +1,45 @@
+:root {
+  font-family:
+    'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: #d8f6d4;
+  background: #04100c;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --paper: #f2ffe0;
+  --ink-bright: #dfffd7;
+  --ink-soft: #b5d9b8;
+  --ink-muted: #83a98d;
+  --leaf: #7bff9d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(123, 255, 157, 0.28);
+  color: var(--paper);
+}
