@@ -517,7 +517,7 @@ function App() {
         <BinaryBand />
         <div className="hero-wave-layout">
           <div className="hero-wave-copy">
-            <p className="eyebrow">coding from australia / market systems / data tools</p>
+            <p className="eyebrow">student / creative / vibe coder</p>
             <WaveMeshHero />
           </div>
 
