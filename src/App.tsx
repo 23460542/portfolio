@@ -44,6 +44,14 @@ const binaryRows = [
   '11100010 01010111 10110010 00011101 01110101 10010010 01101101 1100',
 ]
 
+const binaryFrames = binaryRows.flatMap((row) => {
+  const bits = row.split(' ')
+  return bits.map((_, index) => bits.slice(index, index + 4).join(' ')).filter((frame) => frame.length > 0)
+})
+
+const githubUrl = 'https://github.com/23460542'
+const linkedInUrl = 'https://www.linkedin.com/in/your-linkedin/'
+
 const projects: ProjectPanel[] = [
   {
     id: 'polym',
@@ -206,14 +214,42 @@ function useDraggable(initialPosition: Point) {
   }
 }
 
-function BinaryBand() {
+function BinaryTicker({ offset = 0 }: { offset?: number }) {
+  const [index, setIndex] = useState(offset)
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setIndex((current) => (current + 1) % binaryFrames.length)
+    }, 1700)
+
+    return () => window.clearInterval(interval)
+  }, [])
+
   return (
-    <div className="binary-band" aria-hidden="true">
-      {binaryRows.map((row) => (
-        <span key={row}>{row}</span>
-      ))}
-    </div>
+    <span className="binary-ticker" aria-label="Cycling binary code">
+      ---- {binaryFrames[index % binaryFrames.length]} ----
+    </span>
   )
+}
+
+function createHorizontalWaveGeometry(width: number, height: number, columns: number, rows: number) {
+  const vertices: number[] = []
+
+  for (let row = 0; row < rows; row += 1) {
+    const y = (row / (rows - 1) - 0.5) * height
+
+    for (let column = 0; column < columns - 1; column += 1) {
+      const xA = (column / (columns - 1) - 0.5) * width
+      const xB = ((column + 1) / (columns - 1) - 0.5) * width
+
+      vertices.push(xA, y, 0, xB, y, 0)
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3))
+
+  return geometry
 }
 
 function WaveMeshHero() {
@@ -235,21 +271,21 @@ function WaveMeshHero() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.domElement.className = 'wave-canvas'
-    renderer.domElement.setAttribute('aria-label', 'Interactive green 3D wave mesh')
+    renderer.domElement.setAttribute('aria-label', 'Interactive green horizontal wave mesh')
     host.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
-    camera.position.set(0, -0.34, 5.35)
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
+    camera.position.set(0, -0.44, 5.8)
     camera.lookAt(0, 0, 0)
 
     const uniforms = {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
-      uHover: { value: 0.18 },
+      uHover: { value: 0.08 },
     }
 
-    const geometry = new THREE.PlaneGeometry(6.6, 3.8, 132, 76)
+    const geometry = createHorizontalWaveGeometry(8.6, 4.15, 92, 38)
     const material = new THREE.ShaderMaterial({
       fragmentShader: `
         varying float vElevation;
@@ -272,14 +308,14 @@ function WaveMeshHero() {
 
         void main() {
           vec3 pos = position;
-          vec2 normalized = vec2(position.x / 3.3, position.y / 1.9);
-          float baseWave = sin(position.x * 2.05 + uTime * 0.85) * 0.16;
-          baseWave += sin(position.y * 3.7 - uTime * 1.15) * 0.08;
-          baseWave += sin((position.x + position.y) * 1.65 + uTime * 0.55) * 0.1;
+          vec2 normalized = vec2(position.x / 4.3, position.y / 2.075);
+          float baseWave = sin(position.x * 1.18 + uTime * 0.22) * 0.13;
+          baseWave += sin(position.y * 2.0 - uTime * 0.28) * 0.055;
+          baseWave += sin((position.x + position.y) * 0.9 + uTime * 0.18) * 0.07;
 
           float dist = distance(normalized, uMouse);
-          float cursorRipple = sin(dist * 24.0 - uTime * 5.2) * exp(-dist * 4.4) * 0.58 * uHover;
-          vec2 push = normalize(normalized - uMouse + 0.0001) * exp(-dist * 5.0) * 0.16 * uHover;
+          float cursorRipple = sin(dist * 16.0 - uTime * 1.2) * exp(-dist * 4.2) * 0.18 * uHover;
+          vec2 push = normalize(normalized - uMouse + 0.0001) * exp(-dist * 5.0) * 0.035 * uHover;
 
           pos.xy += push;
           pos.z = baseWave + cursorRipple;
@@ -288,16 +324,16 @@ function WaveMeshHero() {
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
       `,
-      wireframe: true,
     })
 
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.rotation.x = -0.58
-    mesh.rotation.z = -0.04
-    scene.add(mesh)
+    const waveLines = new THREE.LineSegments(geometry, material)
+    waveLines.rotation.x = -0.52
+    waveLines.rotation.y = 0.035
+    waveLines.rotation.z = -0.07
+    scene.add(waveLines)
 
     let frameId = 0
-    let targetHover = 0.18
+    let targetHover = 0.08
     const targetMouse = new THREE.Vector2(0, 0)
     const clock = new THREE.Clock()
 
@@ -317,19 +353,19 @@ function WaveMeshHero() {
       const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
 
       targetMouse.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1))
-      targetHover = 1
+      targetHover = 0.42
     }
 
     function onPointerLeave() {
       targetMouse.set(0, 0)
-      targetHover = 0.18
+      targetHover = 0.08
     }
 
     function animate() {
       uniforms.uTime.value = clock.getElapsedTime()
-      uniforms.uMouse.value.lerp(targetMouse, 0.08)
-      uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.08)
-      mesh.rotation.z = Math.sin(uniforms.uTime.value * 0.24) * 0.045 - 0.04
+      uniforms.uMouse.value.lerp(targetMouse, 0.045)
+      uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
+      waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.07) * 0.018 - 0.07
       renderer.render(scene, camera)
       frameId = window.requestAnimationFrame(animate)
     }
@@ -501,43 +537,37 @@ function ResumeViewer() {
 function App() {
   return (
     <main className="site-shell">
-      <nav className="site-nav" aria-label="Primary navigation">
-        <a href="#top" className="brand-mark">
-          JT://PORTFOLIO
-        </a>
-        <div>
-          <a href="#about">about</a>
-          <a href="#projects">projects</a>
-          <a href="#education">education</a>
-          <a href="#resume">resume</a>
-        </div>
-      </nav>
-
       <section className="hero" id="top">
-        <BinaryBand />
-        <div className="hero-wave-layout">
-          <div className="hero-wave-copy">
-            <p className="eyebrow">student / creative / vibe coder</p>
-            <WaveMeshHero />
+        <header className="hero-rail hero-rail-top">
+          <a href="#top" className="brand-mark">
+            JT://PORTFOLIO
+          </a>
+          <BinaryTicker />
+          <div className="hero-actions">
+            <a href={linkedInUrl} target="_blank" rel="noreferrer">
+              LINKEDIN
+            </a>
+            <a href={githubUrl} target="_blank" rel="noreferrer">
+              GITHUB
+            </a>
           </div>
+        </header>
 
-          <aside className="hero-terminal" aria-label="System status">
-            <div className="terminal-top">
-              <span>portfolio.boot</span>
-              <span>v0.1</span>
-            </div>
-            <pre>{`> boot /mesh
-WAVE_FIELD active
-> load /projects
-OK 3 dashboard panels
-> attach resume.pdf
-PENDING placeholder
-> deploy target
-GITHUB_PAGES /portfolio/
-> aws future
-AMPLIFY or S3 + CLOUDFRONT`}</pre>
-          </aside>
+        <div className="hero-wave-copy">
+          <p className="eyebrow">student / creative / vibe coder</p>
+          <WaveMeshHero />
         </div>
+
+        <footer className="hero-rail hero-rail-bottom">
+          <span>PERTH / AU</span>
+          <BinaryTicker offset={5} />
+          <nav className="hero-nav" aria-label="Portfolio sections">
+            <a href="#about">ABOUT</a>
+            <a href="#projects">PROJECTS</a>
+            <a href="#education">EDUCATION</a>
+            <a href="#resume">RESUME</a>
+          </nav>
+        </footer>
       </section>
 
       <section className="about-section" id="about">
