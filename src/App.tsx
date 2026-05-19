@@ -643,7 +643,7 @@ function App() {
           </div>
 
           <a className="resume-jump" href="#resume">
-            <span className="hero-underline">I'm just here for the resume</span>
+            <span className="hero-underline">↓ I'm just here for the resume ↓</span>
           </a>
         </header>
 
