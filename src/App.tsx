@@ -43,27 +43,25 @@ type TerminalLine = {
   tone: 'command' | 'output'
 }
 
-const binaryRows = [
-  '10000111 01110110 01001101 11101001 00111100 10110111 01001001 1010',
-  '01101001 11011010 00101111 10110100 01110001 01001111 11100110 0011',
-  '11100010 01010111 10110010 00011101 01110101 10010010 01101101 1100',
-]
-
-const binaryFrames = binaryRows.flatMap((row) => {
-  const bits = row.split(' ')
-  return bits.map((_, index) => bits.slice(index, index + 4).join(' ')).filter((frame) => frame.length > 0)
-})
-
 const terminalTranscript: TerminalLine[] = [
   { text: '$ boot portfolio --ascii', tone: 'command' },
-  { text: 'ok   loading green mesh renderer', tone: 'output' },
-  { text: '$ polym sync --mock-feed', tone: 'command' },
-  { text: 'ok   2,408 wallets indexed', tone: 'output' },
-  { text: '$ aitrade risk --dry-run', tone: 'command' },
-  { text: 'pass latency 82ms / cap 0.35R', tone: 'output' },
-  { text: '$ open resume.pdf', tone: 'command' },
-  { text: 'ready viewer anchored at #resume', tone: 'output' },
+  { text: 'ok   renderer: vertical mesh strands / reduced cursor gain / ambient wave online', tone: 'output' },
+  { text: 'ok   route table: #about #projects #education #resume linked into header', tone: 'output' },
+  { text: '$ polym sync --mock-feed --wallets --topics --edge-score', tone: 'command' },
+  { text: 'recv 2,408 wallets, 184 markets, 37 watched topics, confidence 0.71', tone: 'output' },
+  { text: 'emit dashboard.polym.edge_score=84.6 delta=+6.2 status=watch', tone: 'output' },
+  { text: '$ aitrade risk --dry-run --broker paper --audit trace', tone: 'command' },
+  { text: 'pass latency=82ms cap=0.35R orders=1,182 risk_pass=97.4%', tone: 'output' },
+  { text: 'lock audit_hash=9af3-21 replay_window=24h fail_closed=true', tone: 'output' },
+  { text: '$ resume viewer --mount #resume --placeholder public/resume.pdf', tone: 'command' },
+  { text: 'ready zoom controls attached, draggable paper window waiting for real PDF', tone: 'output' },
+  { text: '$ aws amplify preview --static dist --future-hosting', tone: 'command' },
+  { text: 'note build remains static and portable for Pages, Amplify, or S3/CloudFront', tone: 'output' },
+  { text: '$ reset terminal --loop', tone: 'command' },
 ]
+
+const githubUrl = 'https://github.com/23460542'
+const linkedInUrl = 'https://www.linkedin.com/in/your-linkedin/'
 
 const projects: ProjectPanel[] = [
   {
@@ -227,73 +225,57 @@ function useDraggable(initialPosition: Point) {
   }
 }
 
-function BinaryTicker({ offset = 0 }: { offset?: number }) {
-  const [index, setIndex] = useState(offset)
+function createBinaryFrame(length = 32) {
+  return Array.from({ length }, () => (Math.random() > 0.5 ? '1' : '0'))
+    .join('')
+    .replace(/(.{4})/g, '$1 ')
+    .trim()
+}
+
+function BinaryTicker({ length = 32 }: { length?: number }) {
+  const [frame, setFrame] = useState(() => createBinaryFrame(length))
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setIndex((current) => (current + 1) % binaryFrames.length)
-    }, 1700)
+      setFrame(createBinaryFrame(length))
+    }, 78)
 
     return () => window.clearInterval(interval)
-  }, [])
+  }, [length])
 
   return (
-    <span className="binary-ticker" aria-label="Cycling binary code">
-      ---- {binaryFrames[index % binaryFrames.length]} ----
+    <span className="binary-ticker" aria-label="Rapidly changing binary code">
+      ---- {frame} ----
     </span>
   )
 }
 
-function AsciiRail({ offset = 0 }: { offset?: number }) {
+function AsciiRail() {
   return (
     <div className="ascii-rail" aria-hidden="true">
       <span className="slash-run">////////////////////////////////////////////////</span>
-      <BinaryTicker offset={offset} />
+      <BinaryTicker />
       <span className="slash-run">////////////////////////////////////////////////</span>
     </div>
   )
 }
 
 function HeroTerminal() {
-  const [cursor, setCursor] = useState({ line: 0, char: 0 })
-
-  useEffect(() => {
-    const currentLine = terminalTranscript[cursor.line]
-    const lineComplete = cursor.char >= currentLine.text.length
-    const transcriptComplete = cursor.line === terminalTranscript.length - 1 && lineComplete
-    const delay = transcriptComplete ? 1600 : lineComplete ? 280 : 34
-
-    const timeout = window.setTimeout(() => {
-      if (transcriptComplete) {
-        setCursor({ line: 0, char: 0 })
-        return
-      }
-
-      if (lineComplete) {
-        setCursor({ line: cursor.line + 1, char: 0 })
-        return
-      }
-
-      setCursor({ line: cursor.line, char: cursor.char + 1 })
-    }, delay)
-
-    return () => window.clearTimeout(timeout)
-  }, [cursor])
+  const transcriptLoops = [terminalTranscript, terminalTranscript]
 
   return (
     <div className="terminal-panel" aria-hidden="true">
-      {terminalTranscript.map((line, lineIndex) => {
-        const isActive = lineIndex === cursor.line
-        const text = lineIndex < cursor.line ? line.text : isActive ? line.text.slice(0, cursor.char) : ''
-
-        return (
-          <span className={`terminal-line terminal-line-${line.tone}`} key={`${line.text}-${lineIndex}`}>
-            {text}
-            {isActive ? <span className="terminal-cursor">_</span> : null}
-          </span>
-        )
-      })}
+      <div className="terminal-scroll">
+        {transcriptLoops.map((lines, loopIndex) => (
+          <div className="terminal-block" key={`terminal-loop-${loopIndex}`}>
+            {lines.map((line, lineIndex) => (
+              <span className={`terminal-line terminal-line-${line.tone}`} key={`${line.text}-${loopIndex}-${lineIndex}`}>
+                {line.text}
+              </span>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -323,17 +305,17 @@ function HeroIdentityBand() {
   )
 }
 
-function createHorizontalWaveGeometry(width: number, height: number, columns: number, rows: number) {
+function createVerticalWaveGeometry(width: number, height: number, columns: number, rows: number) {
   const vertices: number[] = []
 
-  for (let row = 0; row < rows; row += 1) {
-    const y = (row / (rows - 1) - 0.5) * height
+  for (let column = 0; column < columns; column += 1) {
+    const x = (column / (columns - 1) - 0.5) * width
 
-    for (let column = 0; column < columns - 1; column += 1) {
-      const xA = (column / (columns - 1) - 0.5) * width
-      const xB = ((column + 1) / (columns - 1) - 0.5) * width
+    for (let row = 0; row < rows - 1; row += 1) {
+      const yA = (row / (rows - 1) - 0.5) * height
+      const yB = ((row + 1) / (rows - 1) - 0.5) * height
 
-      vertices.push(xA, y, 0, xB, y, 0)
+      vertices.push(x, yA, 0, x, yB, 0)
     }
   }
 
@@ -362,7 +344,7 @@ function WaveMeshHero() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.domElement.className = 'wave-canvas'
-    renderer.domElement.setAttribute('aria-label', 'Interactive green horizontal wave mesh')
+    renderer.domElement.setAttribute('aria-label', 'Interactive green vertical wave mesh')
     host.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
@@ -376,7 +358,7 @@ function WaveMeshHero() {
       uHover: { value: 0.08 },
     }
 
-    const geometry = createHorizontalWaveGeometry(16.8, 7.4, 86, 38)
+    const geometry = createVerticalWaveGeometry(16.8, 7.4, 86, 38)
     const material = new THREE.ShaderMaterial({
       fragmentShader: `
         varying float vElevation;
@@ -400,9 +382,9 @@ function WaveMeshHero() {
         void main() {
           vec3 pos = position;
           vec2 normalized = vec2(position.x / 8.4, position.y / 3.7);
-          float baseWave = sin(position.x * 1.18 + uTime * 0.22) * 0.13;
-          baseWave += sin(position.y * 2.0 - uTime * 0.28) * 0.055;
-          baseWave += sin((position.x + position.y) * 0.9 + uTime * 0.18) * 0.07;
+          float baseWave = sin(position.x * 1.18 + uTime * 0.34) * 0.13;
+          baseWave += sin(position.y * 2.0 - uTime * 0.42) * 0.055;
+          baseWave += sin((position.x + position.y) * 0.9 + uTime * 0.29) * 0.07;
 
           float dist = distance(normalized, uMouse);
           float cursorRipple = sin(dist * 16.0 - uTime * 1.2) * exp(-dist * 4.2) * 0.18 * uHover;
@@ -456,7 +438,7 @@ function WaveMeshHero() {
       uniforms.uTime.value = clock.getElapsedTime()
       uniforms.uMouse.value.lerp(targetMouse, 0.045)
       uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
-      waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.07) * 0.014 - 0.045
+      waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.11) * 0.014 - 0.045
       renderer.render(scene, camera)
       frameId = window.requestAnimationFrame(animate)
     }
@@ -631,16 +613,37 @@ function App() {
       <section className="hero" id="top">
         <header className="hero-grid-header">
           <a href="#top" className="hero-logo" aria-label="Back to top">
-            JT
+            <span className="hero-underline">JT</span>
           </a>
 
           <div className="hero-status">
-            <span>PORTFOLIO://JAMES_T</span>
-            <span>PERTH / AU</span>
+            <span className="hero-underline">PORTFOLIO://JAMES_T</span>
+            <span className="hero-underline">PERTH / AU</span>
+          </div>
+
+          <nav className="hero-nav" aria-label="Portfolio sections">
+            <a href="#about">
+              <span className="hero-underline">ABOUT</span>
+            </a>
+            <a href="#projects">
+              <span className="hero-underline">PROJECTS</span>
+            </a>
+            <a href="#education">
+              <span className="hero-underline">EDUCATION</span>
+            </a>
+          </nav>
+
+          <div className="hero-actions" aria-label="Social links">
+            <a href={linkedInUrl} target="_blank" rel="noreferrer">
+              <span className="hero-underline">LINKEDIN</span>
+            </a>
+            <a href={githubUrl} target="_blank" rel="noreferrer">
+              <span className="hero-underline">GITHUB</span>
+            </a>
           </div>
 
           <a className="resume-jump" href="#resume">
-            I'm just here for the resume
+            <span className="hero-underline">I'm just here for the resume</span>
           </a>
         </header>
 
@@ -648,9 +651,9 @@ function App() {
           <WaveMeshHero />
         </div>
 
-        <AsciiRail offset={4} />
+        <AsciiRail />
         <HeroIdentityBand />
-        <AsciiRail offset={9} />
+        <AsciiRail />
       </section>
 
       <section className="about-section" id="about">
