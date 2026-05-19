@@ -38,6 +38,11 @@ type EducationItem = {
   detail: string
 }
 
+type TerminalLine = {
+  text: string
+  tone: 'command' | 'output'
+}
+
 const binaryRows = [
   '10000111 01110110 01001101 11101001 00111100 10110111 01001001 1010',
   '01101001 11011010 00101111 10110100 01110001 01001111 11100110 0011',
@@ -49,19 +54,16 @@ const binaryFrames = binaryRows.flatMap((row) => {
   return bits.map((_, index) => bits.slice(index, index + 4).join(' ')).filter((frame) => frame.length > 0)
 })
 
-const terminalCommands = [
-  '$ git status --short',
-  '$ npm run build',
-  '$ aws s3 sync dist/ s3://portfolio',
-  '$ tail -f signals.log',
-  '$ pnpm polym:ingest',
-  '$ python risk_gate.py --audit',
-  '$ vite --host 0.0.0.0',
-  '$ open resume.pdf',
+const terminalTranscript: TerminalLine[] = [
+  { text: '$ boot portfolio --ascii', tone: 'command' },
+  { text: 'ok   loading green mesh renderer', tone: 'output' },
+  { text: '$ polym sync --mock-feed', tone: 'command' },
+  { text: 'ok   2,408 wallets indexed', tone: 'output' },
+  { text: '$ aitrade risk --dry-run', tone: 'command' },
+  { text: 'pass latency 82ms / cap 0.35R', tone: 'output' },
+  { text: '$ open resume.pdf', tone: 'command' },
+  { text: 'ready viewer anchored at #resume', tone: 'output' },
 ]
-
-const githubUrl = 'https://github.com/23460542'
-const linkedInUrl = 'https://www.linkedin.com/in/your-linkedin/'
 
 const projects: ProjectPanel[] = [
   {
@@ -253,36 +255,64 @@ function AsciiRail({ offset = 0 }: { offset?: number }) {
   )
 }
 
+function HeroTerminal() {
+  const [cursor, setCursor] = useState({ line: 0, char: 0 })
+
+  useEffect(() => {
+    const currentLine = terminalTranscript[cursor.line]
+    const lineComplete = cursor.char >= currentLine.text.length
+    const transcriptComplete = cursor.line === terminalTranscript.length - 1 && lineComplete
+    const delay = transcriptComplete ? 1600 : lineComplete ? 280 : 34
+
+    const timeout = window.setTimeout(() => {
+      if (transcriptComplete) {
+        setCursor({ line: 0, char: 0 })
+        return
+      }
+
+      if (lineComplete) {
+        setCursor({ line: cursor.line + 1, char: 0 })
+        return
+      }
+
+      setCursor({ line: cursor.line, char: cursor.char + 1 })
+    }, delay)
+
+    return () => window.clearTimeout(timeout)
+  }, [cursor])
+
+  return (
+    <div className="terminal-panel" aria-hidden="true">
+      {terminalTranscript.map((line, lineIndex) => {
+        const isActive = lineIndex === cursor.line
+        const text = lineIndex < cursor.line ? line.text : isActive ? line.text.slice(0, cursor.char) : ''
+
+        return (
+          <span className={`terminal-line terminal-line-${line.tone}`} key={`${line.text}-${lineIndex}`}>
+            {text}
+            {isActive ? <span className="terminal-cursor">_</span> : null}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 function HeroIdentityBand() {
-  const marqueeWords = ['STUDENT', 'CREATIVE', 'VIBE CODER']
-  const commandRows = Array.from({ length: 4 }, (_, rowIndex) => terminalCommands.slice(rowIndex).concat(terminalCommands.slice(0, rowIndex)))
+  const marqueeWords = ['STUDENT', '+', 'CREATIVE', '+', 'VIBE CODER', '+']
+  const marqueeSequence = Array.from({ length: 4 }, () => marqueeWords).flat()
 
   return (
     <section className="hero-identity-band" aria-label="Identity ticker">
-      <div className="terminal-command-layer" aria-hidden="true">
-        {commandRows.map((commands, rowIndex) => (
-          <div
-            className="command-row"
-            style={
-              {
-                '--row-duration': `${34 + rowIndex * 7}s`,
-                '--row-shift': `${rowIndex * -140}px`,
-              } as CSSProperties
-            }
-            key={`command-${rowIndex}`}
-          >
-            {[...commands, ...commands].map((command, commandIndex) => (
-              <span key={`${command}-${commandIndex}`}>{command}</span>
-            ))}
-          </div>
-        ))}
-      </div>
+      <HeroTerminal />
 
       <div className="identity-marquee" aria-hidden="true">
         {Array.from({ length: 2 }, (_, groupIndex) => (
           <div className="identity-marquee-group" key={`identity-${groupIndex}`}>
-            {marqueeWords.map((word) => (
-              <span key={`${word}-${groupIndex}`}>{word}</span>
+            {marqueeSequence.map((word, wordIndex) => (
+              <span className={word === '+' ? 'identity-plus' : undefined} key={`${word}-${groupIndex}-${wordIndex}`}>
+                {word}
+              </span>
             ))}
           </div>
         ))}
@@ -337,7 +367,7 @@ function WaveMeshHero() {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
-    camera.position.set(0, -0.44, 5.8)
+    camera.position.set(0, -0.12, 4.55)
     camera.lookAt(0, 0, 0)
 
     const uniforms = {
@@ -346,7 +376,7 @@ function WaveMeshHero() {
       uHover: { value: 0.08 },
     }
 
-    const geometry = createHorizontalWaveGeometry(13.8, 3.55, 84, 30)
+    const geometry = createHorizontalWaveGeometry(16.8, 7.4, 86, 38)
     const material = new THREE.ShaderMaterial({
       fragmentShader: `
         varying float vElevation;
@@ -369,7 +399,7 @@ function WaveMeshHero() {
 
         void main() {
           vec3 pos = position;
-          vec2 normalized = vec2(position.x / 4.3, position.y / 2.075);
+          vec2 normalized = vec2(position.x / 8.4, position.y / 3.7);
           float baseWave = sin(position.x * 1.18 + uTime * 0.22) * 0.13;
           baseWave += sin(position.y * 2.0 - uTime * 0.28) * 0.055;
           baseWave += sin((position.x + position.y) * 0.9 + uTime * 0.18) * 0.07;
@@ -388,9 +418,9 @@ function WaveMeshHero() {
     })
 
     const waveLines = new THREE.LineSegments(geometry, material)
-    waveLines.rotation.x = -0.52
-    waveLines.rotation.y = 0.035
-    waveLines.rotation.z = -0.07
+    waveLines.rotation.x = -0.28
+    waveLines.rotation.y = 0.08
+    waveLines.rotation.z = -0.045
     scene.add(waveLines)
 
     let frameId = 0
@@ -426,7 +456,7 @@ function WaveMeshHero() {
       uniforms.uTime.value = clock.getElapsedTime()
       uniforms.uMouse.value.lerp(targetMouse, 0.045)
       uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
-      waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.07) * 0.018 - 0.07
+      waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.07) * 0.014 - 0.045
       renderer.render(scene, camera)
       frameId = window.requestAnimationFrame(animate)
     }
@@ -609,24 +639,8 @@ function App() {
             <span>PERTH / AU</span>
           </div>
 
-          <nav className="hero-nav" aria-label="Portfolio sections">
-            <a href="#about">ABOUT</a>
-            <a href="#projects">PROJECTS</a>
-            <a href="#education">EDUCATION</a>
-          </nav>
-
-          <div className="hero-actions" aria-label="Social links">
-            <a href={linkedInUrl} target="_blank" rel="noreferrer">
-              LINKEDIN
-            </a>
-            <a href={githubUrl} target="_blank" rel="noreferrer">
-              GITHUB
-            </a>
-          </div>
-
           <a className="resume-jump" href="#resume">
-            <span>I'm just here for the resume</span>
-            <span aria-hidden="true">v</span>
+            I'm just here for the resume
           </a>
         </header>
 
