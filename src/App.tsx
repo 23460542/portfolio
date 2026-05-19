@@ -1,4 +1,13 @@
-import { ExternalLink, FileText, GitBranch, Maximize2, Minus, Move, Plus, RotateCcw } from 'lucide-react'
+import {
+  ExternalLink,
+  FileText,
+  GitBranch,
+  Maximize2,
+  Minus,
+  Move,
+  Plus,
+  RotateCcw,
+} from 'lucide-react'
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import './App.css'
@@ -260,6 +269,24 @@ function AsciiRail() {
   )
 }
 
+function LinkedInMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <rect x="3" y="8.5" width="3.8" height="12.5" rx="0.5" />
+      <circle cx="4.9" cy="4.8" r="2.1" />
+      <path d="M10 8.5h3.6v1.7c0.8-1.2 2-2 3.8-2 2.8 0 4.6 1.8 4.6 5.6V21h-3.9v-6.4c0-2-0.7-3-2.1-3-1.5 0-2.2 1.1-2.2 3V21H10V8.5Z" />
+    </svg>
+  )
+}
+
+function GitHubMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <path d="M12 2.2c-5.5 0-9.8 4.3-9.8 9.8 0 4.3 2.8 8 6.7 9.3 0.5 0.1 0.7-0.2 0.7-0.5v-1.9c-2.7 0.6-3.3-1.2-3.3-1.2-0.4-1.1-1.1-1.4-1.1-1.4-0.9-0.6 0.1-0.6 0.1-0.6 1 0.1 1.6 1.1 1.6 1.1 0.9 1.5 2.4 1.1 2.9 0.8 0.1-0.7 0.4-1.1 0.7-1.4-2.2-0.2-4.5-1.1-4.5-4.8 0-1.1 0.4-1.9 1.1-2.6-0.1-0.3-0.5-1.3 0.1-2.6 0 0 0.9-0.3 2.7 1 0.8-0.2 1.6-0.3 2.5-0.3s1.7 0.1 2.5 0.3c1.9-1.3 2.7-1 2.7-1 0.6 1.3 0.2 2.3 0.1 2.6 0.7 0.7 1.1 1.5 1.1 2.6 0 3.7-2.3 4.6-4.5 4.8 0.4 0.3 0.7 0.9 0.7 1.9v2.7c0 0.3 0.2 0.6 0.7 0.5 3.9-1.3 6.7-5 6.7-9.3 0-5.5-4.3-9.8-9.8-9.8Z" />
+    </svg>
+  )
+}
+
 function HeroTerminal() {
   const transcriptLoops = [terminalTranscript, terminalTranscript]
 
@@ -382,9 +409,15 @@ function WaveMeshHero() {
         void main() {
           vec3 pos = position;
           vec2 normalized = vec2(position.x / 8.4, position.y / 3.7);
-          float baseWave = sin(position.x * 1.18 + uTime * 0.34) * 0.13;
-          baseWave += sin(position.y * 2.0 - uTime * 0.42) * 0.055;
-          baseWave += sin((position.x + position.y) * 0.9 + uTime * 0.29) * 0.07;
+          float waveFront = position.x * 1.15 + uTime * 1.05;
+          float waveSweep = sin(waveFront);
+          float noisyBand = sin(position.y * 3.4 + uTime * 0.74) * 0.018;
+          float compression = waveSweep * 0.26 + noisyBand;
+          pos.x += compression;
+
+          float baseWave = sin(position.x * 1.28 + uTime * 0.48) * 0.16;
+          baseWave += sin(position.y * 2.5 - uTime * 0.58) * 0.072;
+          baseWave += sin((position.x * 1.7 + position.y * 0.82) + uTime * 0.44) * 0.09;
 
           float dist = distance(normalized, uMouse);
           float cursorRipple = sin(dist * 16.0 - uTime * 1.2) * exp(-dist * 4.2) * 0.18 * uHover;
@@ -634,11 +667,11 @@ function App() {
           </nav>
 
           <div className="hero-actions" aria-label="Social links">
-            <a href={linkedInUrl} target="_blank" rel="noreferrer">
-              <span className="hero-underline">LINKEDIN</span>
+            <a className="hero-social-link" href={linkedInUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn">
+              <LinkedInMark />
             </a>
-            <a href={githubUrl} target="_blank" rel="noreferrer">
-              <span className="hero-underline">GITHUB</span>
+            <a className="hero-social-link" href={githubUrl} target="_blank" rel="noreferrer" aria-label="GitHub">
+              <GitHubMark />
             </a>
           </div>
 

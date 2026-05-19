@@ -136,10 +136,58 @@
   gap: 14px;
 }
 
+.hero-grid-header > .hero-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+}
+
 .hero-actions a,
 .hero-nav a {
   color: var(--ink-bright);
   text-decoration: none;
+}
+
+.hero-social-link {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 100%;
+  place-items: center;
+  overflow: hidden;
+  color: var(--ink-bright);
+  transition: color 180ms ease;
+}
+
+.hero-social-link + .hero-social-link {
+  border-left: 1px solid rgba(183, 247, 210, 0.32);
+}
+
+.hero-social-link::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: var(--ink-bright);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 260ms ease;
+}
+
+.hero-social-link:hover,
+.hero-social-link:focus-visible {
+  color: #03110b;
+}
+
+.hero-social-link:hover::before,
+.hero-social-link:focus-visible::before {
+  transform: scaleX(1);
+}
+
+.hero-social-link svg {
+  position: relative;
+  z-index: 1;
+  fill: currentColor;
 }
 
 .resume-jump {
@@ -261,7 +309,6 @@
   width: min(470px, 38vw);
   height: 100%;
   overflow: hidden;
-  border-right: 1px solid rgba(123, 255, 157, 0.14);
   padding: 16px 18px 16px 16px;
   background: linear-gradient(90deg, rgba(33, 255, 137, 0.09), transparent 86%);
   color: rgba(123, 255, 157, 0.56);
@@ -273,7 +320,7 @@
 .terminal-scroll {
   display: grid;
   gap: 18px;
-  animation: terminal-scroll-up 32s linear infinite;
+  animation: terminal-scroll-up 34s steps(14, end) infinite;
 }
 
 .terminal-block {
