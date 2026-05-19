@@ -49,6 +49,17 @@ const binaryFrames = binaryRows.flatMap((row) => {
   return bits.map((_, index) => bits.slice(index, index + 4).join(' ')).filter((frame) => frame.length > 0)
 })
 
+const terminalCommands = [
+  '$ git status --short',
+  '$ npm run build',
+  '$ aws s3 sync dist/ s3://portfolio',
+  '$ tail -f signals.log',
+  '$ pnpm polym:ingest',
+  '$ python risk_gate.py --audit',
+  '$ vite --host 0.0.0.0',
+  '$ open resume.pdf',
+]
+
 const githubUrl = 'https://github.com/23460542'
 const linkedInUrl = 'https://www.linkedin.com/in/your-linkedin/'
 
@@ -232,6 +243,56 @@ function BinaryTicker({ offset = 0 }: { offset?: number }) {
   )
 }
 
+function AsciiRail({ offset = 0 }: { offset?: number }) {
+  return (
+    <div className="ascii-rail" aria-hidden="true">
+      <span className="slash-run">////////////////////////////////////////////////</span>
+      <BinaryTicker offset={offset} />
+      <span className="slash-run">////////////////////////////////////////////////</span>
+    </div>
+  )
+}
+
+function HeroIdentityBand() {
+  const marqueeWords = ['STUDENT', 'CREATIVE', 'VIBE CODER']
+  const commandRows = Array.from({ length: 4 }, (_, rowIndex) => terminalCommands.slice(rowIndex).concat(terminalCommands.slice(0, rowIndex)))
+
+  return (
+    <section className="hero-identity-band" aria-label="Identity ticker">
+      <div className="terminal-command-layer" aria-hidden="true">
+        {commandRows.map((commands, rowIndex) => (
+          <div
+            className="command-row"
+            style={
+              {
+                '--row-duration': `${34 + rowIndex * 7}s`,
+                '--row-shift': `${rowIndex * -140}px`,
+              } as CSSProperties
+            }
+            key={`command-${rowIndex}`}
+          >
+            {[...commands, ...commands].map((command, commandIndex) => (
+              <span key={`${command}-${commandIndex}`}>{command}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div className="identity-marquee" aria-hidden="true">
+        {Array.from({ length: 2 }, (_, groupIndex) => (
+          <div className="identity-marquee-group" key={`identity-${groupIndex}`}>
+            {marqueeWords.map((word) => (
+              <span key={`${word}-${groupIndex}`}>{word}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <h1 className="sr-only">Student, creative, vibe coder</h1>
+    </section>
+  )
+}
+
 function createHorizontalWaveGeometry(width: number, height: number, columns: number, rows: number) {
   const vertices: number[] = []
 
@@ -285,7 +346,7 @@ function WaveMeshHero() {
       uHover: { value: 0.08 },
     }
 
-    const geometry = createHorizontalWaveGeometry(8.6, 4.15, 92, 38)
+    const geometry = createHorizontalWaveGeometry(13.8, 3.55, 84, 30)
     const material = new THREE.ShaderMaterial({
       fragmentShader: `
         varying float vElevation;
@@ -538,12 +599,23 @@ function App() {
   return (
     <main className="site-shell">
       <section className="hero" id="top">
-        <header className="hero-rail hero-rail-top">
-          <a href="#top" className="brand-mark">
-            JT://PORTFOLIO
+        <header className="hero-grid-header">
+          <a href="#top" className="hero-logo" aria-label="Back to top">
+            JT
           </a>
-          <BinaryTicker />
-          <div className="hero-actions">
+
+          <div className="hero-status">
+            <span>PORTFOLIO://JAMES_T</span>
+            <span>PERTH / AU</span>
+          </div>
+
+          <nav className="hero-nav" aria-label="Portfolio sections">
+            <a href="#about">ABOUT</a>
+            <a href="#projects">PROJECTS</a>
+            <a href="#education">EDUCATION</a>
+          </nav>
+
+          <div className="hero-actions" aria-label="Social links">
             <a href={linkedInUrl} target="_blank" rel="noreferrer">
               LINKEDIN
             </a>
@@ -551,23 +623,20 @@ function App() {
               GITHUB
             </a>
           </div>
+
+          <a className="resume-jump" href="#resume">
+            <span>I'm just here for the resume</span>
+            <span aria-hidden="true">v</span>
+          </a>
         </header>
 
-        <div className="hero-wave-copy">
-          <p className="eyebrow">student / creative / vibe coder</p>
+        <div className="hero-wave-panel">
           <WaveMeshHero />
         </div>
 
-        <footer className="hero-rail hero-rail-bottom">
-          <span>PERTH / AU</span>
-          <BinaryTicker offset={5} />
-          <nav className="hero-nav" aria-label="Portfolio sections">
-            <a href="#about">ABOUT</a>
-            <a href="#projects">PROJECTS</a>
-            <a href="#education">EDUCATION</a>
-            <a href="#resume">RESUME</a>
-          </nav>
-        </footer>
+        <AsciiRail offset={4} />
+        <HeroIdentityBand />
+        <AsciiRail offset={9} />
       </section>
 
       <section className="about-section" id="about">
