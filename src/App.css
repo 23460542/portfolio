@@ -3,6 +3,7 @@
 }
 
 .site-shell {
+  --wave-reveal-height: 100svh;
   --wave-rise-distance: 100svh;
   position: relative;
   width: calc(100% - 32px);
@@ -112,14 +113,14 @@
   pointer-events: none;
 }
 
-.site-shell.is-ready .hero-grid-header > :not(.hero-logo),
-.site-shell.is-ready .ascii-rail,
-.site-shell.is-ready .hero-identity-band,
-.site-shell.is-ready .about-section,
-.site-shell.is-ready .projects-section,
-.site-shell.is-ready .education-section,
-.site-shell.is-ready .resume-section,
-.site-shell.is-ready .site-footer {
+.site-shell.is-settling .hero-grid-header > :not(.hero-logo),
+.site-shell.is-settling .ascii-rail,
+.site-shell.is-settling .hero-identity-band,
+.site-shell.is-settling .about-section,
+.site-shell.is-settling .projects-section,
+.site-shell.is-settling .education-section,
+.site-shell.is-settling .resume-section,
+.site-shell.is-settling .site-footer {
   animation: page-fade-in 620ms ease both;
 }
 
@@ -411,14 +412,25 @@
 }
 
 .site-shell.is-revealing .hero-wave-panel,
-.site-shell.is-revealing .wave-scene {
+.site-shell.is-revealing .wave-scene,
+.site-shell.is-settling .hero-wave-panel,
+.site-shell.is-settling .wave-scene {
   overflow: visible;
 }
 
 .site-shell.is-revealing .wave-scene::before,
 .site-shell.is-revealing .wave-canvas {
   animation: wave-lines-rise 1280ms cubic-bezier(0.2, 0, 0.12, 1) both;
+  height: var(--wave-reveal-height);
+  inset: 0 0 auto;
   transform: translateY(var(--wave-rise-distance));
+}
+
+.site-shell.is-settling .wave-scene::before,
+.site-shell.is-settling .wave-canvas {
+  height: var(--wave-reveal-height);
+  inset: 0 0 auto;
+  transform: translateY(0);
 }
 
 .ascii-rail {
@@ -1033,14 +1045,14 @@
   .loading-screen.is-flying .loading-logo,
   .site-shell.is-revealing .wave-scene::before,
   .site-shell.is-revealing .wave-canvas,
-  .site-shell.is-ready .hero-grid-header > :not(.hero-logo),
-  .site-shell.is-ready .ascii-rail,
-  .site-shell.is-ready .hero-identity-band,
-  .site-shell.is-ready .about-section,
-  .site-shell.is-ready .projects-section,
-  .site-shell.is-ready .education-section,
-  .site-shell.is-ready .resume-section,
-  .site-shell.is-ready .site-footer,
+  .site-shell.is-settling .hero-grid-header > :not(.hero-logo),
+  .site-shell.is-settling .ascii-rail,
+  .site-shell.is-settling .hero-identity-band,
+  .site-shell.is-settling .about-section,
+  .site-shell.is-settling .projects-section,
+  .site-shell.is-settling .education-section,
+  .site-shell.is-settling .resume-section,
+  .site-shell.is-settling .site-footer,
   .loading-pulse span {
     animation-duration: 1ms;
   }

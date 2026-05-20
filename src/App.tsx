@@ -62,7 +62,7 @@ type TerminalLine = {
   tone: 'command' | 'output'
 }
 
-type IntroPhase = 'loading' | 'revealing' | 'ready'
+type IntroPhase = 'loading' | 'revealing' | 'settling' | 'ready'
 
 const terminalTranscript: TerminalLine[] = [
   { text: '$ boot portfolio --ascii', tone: 'command' },
@@ -738,7 +738,10 @@ function App() {
     }
 
     const { top } = wavePanel.getBoundingClientRect()
-    shell.style.setProperty('--wave-rise-distance', `${Math.max(window.innerHeight - top, 0)}px`)
+    const revealHeight = Math.max(window.innerHeight - top, 0)
+
+    shell.style.setProperty('--wave-reveal-height', `${revealHeight}px`)
+    shell.style.setProperty('--wave-rise-distance', `${revealHeight}px`)
   }, [])
 
   const finishLoading = useCallback(() => {
@@ -754,14 +757,21 @@ function App() {
   }, [updateWaveRiseDistance])
 
   useEffect(() => {
-    if (introPhase !== 'revealing') {
-      return
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (introPhase === 'revealing') {
+      const revealTimer = window.setTimeout(() => setIntroPhase('settling'), prefersReducedMotion ? 90 : 1280)
+
+      return () => window.clearTimeout(revealTimer)
     }
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const revealTimer = window.setTimeout(() => setIntroPhase('ready'), prefersReducedMotion ? 90 : 1380)
+    if (introPhase === 'settling') {
+      const settleTimer = window.setTimeout(() => setIntroPhase('ready'), prefersReducedMotion ? 90 : 660)
 
-    return () => window.clearTimeout(revealTimer)
+      return () => window.clearTimeout(settleTimer)
+    }
+
+    return undefined
   }, [introPhase])
 
   return (
