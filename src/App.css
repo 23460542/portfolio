@@ -85,6 +85,28 @@
   color: transparent;
 }
 
+.site-shell.is-revealing .hero-grid-header > :not(.hero-logo),
+.site-shell.is-revealing .ascii-rail,
+.site-shell.is-revealing .hero-identity-band,
+.site-shell.is-revealing .about-section,
+.site-shell.is-revealing .projects-section,
+.site-shell.is-revealing .education-section,
+.site-shell.is-revealing .resume-section,
+.site-shell.is-revealing .site-footer {
+  opacity: 0;
+}
+
+.site-shell.is-ready .hero-grid-header > :not(.hero-logo),
+.site-shell.is-ready .ascii-rail,
+.site-shell.is-ready .hero-identity-band,
+.site-shell.is-ready .about-section,
+.site-shell.is-ready .projects-section,
+.site-shell.is-ready .education-section,
+.site-shell.is-ready .resume-section,
+.site-shell.is-ready .site-footer {
+  animation: page-fade-in 620ms ease both;
+}
+
 .site-shell::before {
   position: fixed;
   inset: 0;
@@ -370,6 +392,16 @@
   width: 100%;
   height: 100%;
   filter: drop-shadow(0 0 18px rgba(123, 255, 157, 0.28));
+}
+
+.site-shell.is-revealing .wave-scene::before,
+.site-shell.is-revealing .wave-canvas {
+  clip-path: inset(100% 0 0 0);
+  animation: wave-lines-rise 980ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+.site-shell.is-revealing .wave-canvas {
+  transform: translateY(15%);
 }
 
 .ascii-rail {
@@ -933,6 +965,28 @@
   }
 }
 
+@keyframes wave-lines-rise {
+  from {
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(15%);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes identity-scroll {
   from {
     transform: translateX(0);
@@ -962,6 +1016,16 @@
   .loading-logo-flight,
   .loading-screen.is-flying .loading-logo-flight,
   .loading-screen.is-flying .loading-logo,
+  .site-shell.is-revealing .wave-scene::before,
+  .site-shell.is-revealing .wave-canvas,
+  .site-shell.is-ready .hero-grid-header > :not(.hero-logo),
+  .site-shell.is-ready .ascii-rail,
+  .site-shell.is-ready .hero-identity-band,
+  .site-shell.is-ready .about-section,
+  .site-shell.is-ready .projects-section,
+  .site-shell.is-ready .education-section,
+  .site-shell.is-ready .resume-section,
+  .site-shell.is-ready .site-footer,
   .loading-pulse span {
     animation-duration: 1ms;
   }

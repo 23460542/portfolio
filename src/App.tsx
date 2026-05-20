@@ -62,6 +62,8 @@ type TerminalLine = {
   tone: 'command' | 'output'
 }
 
+type IntroPhase = 'loading' | 'revealing' | 'ready'
+
 const terminalTranscript: TerminalLine[] = [
   { text: '$ boot portfolio --ascii', tone: 'command' },
   { text: 'ok   renderer: vertical mesh strands / reduced cursor gain / ambient wave online', tone: 'output' },
@@ -723,12 +725,23 @@ function ResumeViewer() {
 
 function App() {
   const logoHomeRef = useRef<HTMLAnchorElement | null>(null)
-  const [showLoader, setShowLoader] = useState(true)
-  const finishLoading = useCallback(() => setShowLoader(false), [])
+  const [introPhase, setIntroPhase] = useState<IntroPhase>('loading')
+  const finishLoading = useCallback(() => setIntroPhase('revealing'), [])
+
+  useEffect(() => {
+    if (introPhase !== 'revealing') {
+      return
+    }
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const revealTimer = window.setTimeout(() => setIntroPhase('ready'), prefersReducedMotion ? 90 : 1180)
+
+    return () => window.clearTimeout(revealTimer)
+  }, [introPhase])
 
   return (
-    <main className={`site-shell ${showLoader ? 'is-loading' : 'is-loaded'}`}>
-      {showLoader ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
+    <main className={`site-shell is-${introPhase}`}>
+      {introPhase === 'loading' ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
 
       <section className="hero" id="top">
         <header className="hero-grid-header">
