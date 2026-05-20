@@ -66,7 +66,7 @@ type IntroPhase = 'loading' | 'revealing' | 'settling' | 'ready'
 
 const terminalTranscript: TerminalLine[] = [
   { text: '$ boot portfolio --ascii', tone: 'command' },
-  { text: 'ok   renderer: vertical mesh strands / reduced cursor gain / ambient wave online', tone: 'output' },
+  { text: 'ok   renderer: vertical mesh strands / damped cursor tug / ambient wave online', tone: 'output' },
   { text: 'ok   route table: #about #projects #education #resume linked into header', tone: 'output' },
   { text: '$ polym sync --mock-feed --wallets --topics --edge-score', tone: 'command' },
   { text: 'recv 2,408 wallets, 184 markets, 37 watched topics, confidence 0.71', tone: 'output' },
@@ -468,6 +468,11 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
     renderer.domElement.setAttribute('aria-label', 'Interactive green vertical wave mesh')
     host.appendChild(renderer.domElement)
 
+    const cursorDot = document.createElement('span')
+    cursorDot.className = 'wave-cursor-dot'
+    cursorDot.setAttribute('aria-hidden', 'true')
+    host.appendChild(cursorDot)
+
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100)
     camera.position.set(0, -0.12, 4.55)
@@ -476,7 +481,8 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
     const uniforms = {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
-      uHover: { value: 0.08 },
+      uCursorTug: { value: new THREE.Vector2(0, 0) },
+      uHover: { value: 0 },
       uIntroProgress: { value: 0 },
     }
 
@@ -513,6 +519,7 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
       vertexShader: `
         uniform float uTime;
         uniform vec2 uMouse;
+        uniform vec2 uCursorTug;
         uniform float uHover;
         varying float vElevation;
         varying vec2 vRevealCoord;
@@ -530,12 +537,18 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
           baseWave += sin(position.y * 2.5 - uTime * 0.58) * 0.072;
           baseWave += sin((position.x * 1.7 + position.y * 0.82) + uTime * 0.44) * 0.09;
 
-          float dist = distance(normalized, uMouse);
-          float cursorRipple = sin(dist * 16.0 - uTime * 1.2) * exp(-dist * 4.2) * 0.18 * uHover;
-          vec2 push = normalize(normalized - uMouse + 0.0001) * exp(-dist * 5.0) * 0.035 * uHover;
+          vec2 cursorDelta = normalized - uMouse;
+          float dist = length(cursorDelta);
+          float catchInfluence = exp(-dist * 4.6) * uHover;
+          float tugStrength = clamp(length(uCursorTug) * 2.7, 0.0, 1.0);
+          vec2 tugDirection = uCursorTug / max(length(uCursorTug), 0.001);
+          float trailingSide = 1.0 - smoothstep(-0.46, 0.34, dot(cursorDelta, tugDirection));
+          float followInfluence = catchInfluence * mix(0.72, 1.18, trailingSide);
+          float forwardPull = catchInfluence * (0.12 + tugStrength * 0.16);
+          float trailingLift = followInfluence * tugStrength * 0.08;
 
-          pos.xy += push;
-          pos.z = baseWave + cursorRipple;
+          pos.xy += uCursorTug * followInfluence * 0.22;
+          pos.z = baseWave + forwardPull + trailingLift;
           vElevation = pos.z;
           vRevealCoord = vec2((position.x + 8.4) / 16.8, (position.y + 3.7) / 7.4);
 
@@ -551,8 +564,10 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
     scene.add(waveLines)
 
     let frameId = 0
-    let targetHover = 0.08
+    let targetHover = 0
+    let previousTimestamp = performance.now()
     const targetMouse = new THREE.Vector2(0, 0)
+    const tugTarget = new THREE.Vector2(0, 0)
     const timer = new THREE.Timer()
     timer.connect(document)
 
@@ -568,23 +583,54 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
 
     function onPointerMove(event: globalThis.PointerEvent) {
       const rect = host.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0) {
+        return
+      }
+
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
       const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
 
       targetMouse.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1))
-      targetHover = 0.42
+      targetHover = 1
     }
 
     function onPointerLeave() {
-      targetMouse.set(0, 0)
-      targetHover = 0.08
+      targetHover = 0
+    }
+
+    function onWindowPointerMove(event: globalThis.PointerEvent) {
+      const rect = host.getBoundingClientRect()
+      const isInsideHost =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+
+      if (!isInsideHost) {
+        targetHover = 0
+      }
     }
 
     function animate(timestamp?: number) {
+      const now = timestamp ?? performance.now()
+      const deltaTime = Math.min(Math.max((now - previousTimestamp) / 1000, 1 / 240), 0.08)
+      previousTimestamp = now
       timer.update(timestamp)
       uniforms.uTime.value = timer.getElapsed()
-      uniforms.uMouse.value.lerp(targetMouse, 0.045)
-      uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
+      uniforms.uMouse.value.x = THREE.MathUtils.damp(uniforms.uMouse.value.x, targetMouse.x, 7.6, deltaTime)
+      uniforms.uMouse.value.y = THREE.MathUtils.damp(uniforms.uMouse.value.y, targetMouse.y, 7.6, deltaTime)
+      uniforms.uHover.value = THREE.MathUtils.damp(uniforms.uHover.value, targetHover, 8.4, deltaTime)
+      tugTarget
+        .subVectors(targetMouse, uniforms.uMouse.value)
+        .multiplyScalar(uniforms.uHover.value)
+        .clampLength(0, 0.42)
+      uniforms.uCursorTug.value.x = THREE.MathUtils.damp(uniforms.uCursorTug.value.x, tugTarget.x, 9.8, deltaTime)
+      uniforms.uCursorTug.value.y = THREE.MathUtils.damp(uniforms.uCursorTug.value.y, tugTarget.y, 9.8, deltaTime)
+
+      const cursorX = ((uniforms.uMouse.value.x + 1) / 2) * host.clientWidth
+      const cursorY = ((1 - uniforms.uMouse.value.y) / 2) * host.clientHeight
+      cursorDot.style.transform = `translate3d(${cursorX.toFixed(2)}px, ${cursorY.toFixed(2)}px, 0) translate(-50%, -50%)`
+      cursorDot.style.opacity = `${THREE.MathUtils.smoothstep(uniforms.uHover.value, 0.08, 0.58).toFixed(3)}`
 
       if (introPhaseRef.current === 'revealing') {
         const revealStart = revealStartRef.current ?? performance.now()
@@ -604,6 +650,7 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
     resizeObserver.observe(host)
     host.addEventListener('pointermove', onPointerMove)
     host.addEventListener('pointerleave', onPointerLeave)
+    window.addEventListener('pointermove', onWindowPointerMove)
     resize()
     animate()
 
@@ -612,11 +659,13 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
       resizeObserver.disconnect()
       host.removeEventListener('pointermove', onPointerMove)
       host.removeEventListener('pointerleave', onPointerLeave)
+      window.removeEventListener('pointermove', onWindowPointerMove)
       timer.dispose()
       geometry.dispose()
       material.dispose()
       renderer.dispose()
       renderer.domElement.remove()
+      cursorDot.remove()
     }
   }, [])
 
