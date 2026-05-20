@@ -724,9 +724,34 @@ function ResumeViewer() {
 }
 
 function App() {
+  const shellRef = useRef<HTMLElement | null>(null)
   const logoHomeRef = useRef<HTMLAnchorElement | null>(null)
+  const wavePanelRef = useRef<HTMLDivElement | null>(null)
   const [introPhase, setIntroPhase] = useState<IntroPhase>('loading')
-  const finishLoading = useCallback(() => setIntroPhase('revealing'), [])
+
+  const updateWaveRiseDistance = useCallback(() => {
+    const shell = shellRef.current
+    const wavePanel = wavePanelRef.current
+
+    if (!shell || !wavePanel) {
+      return
+    }
+
+    const { top } = wavePanel.getBoundingClientRect()
+    shell.style.setProperty('--wave-rise-distance', `${Math.max(window.innerHeight - top, 0)}px`)
+  }, [])
+
+  const finishLoading = useCallback(() => {
+    updateWaveRiseDistance()
+    setIntroPhase('revealing')
+  }, [updateWaveRiseDistance])
+
+  useLayoutEffect(() => {
+    updateWaveRiseDistance()
+    window.addEventListener('resize', updateWaveRiseDistance)
+
+    return () => window.removeEventListener('resize', updateWaveRiseDistance)
+  }, [updateWaveRiseDistance])
 
   useEffect(() => {
     if (introPhase !== 'revealing') {
@@ -734,13 +759,13 @@ function App() {
     }
 
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const revealTimer = window.setTimeout(() => setIntroPhase('ready'), prefersReducedMotion ? 90 : 1180)
+    const revealTimer = window.setTimeout(() => setIntroPhase('ready'), prefersReducedMotion ? 90 : 1380)
 
     return () => window.clearTimeout(revealTimer)
   }, [introPhase])
 
   return (
-    <main className={`site-shell is-${introPhase}`}>
+    <main className={`site-shell is-${introPhase}`} ref={shellRef}>
       {introPhase === 'loading' ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
 
       <section className="hero" id="top">
@@ -783,7 +808,7 @@ function App() {
           </a>
         </header>
 
-        <div className="hero-wave-panel">
+        <div className="hero-wave-panel" ref={wavePanelRef}>
           <WaveMeshHero />
         </div>
 

@@ -3,6 +3,7 @@
 }
 
 .site-shell {
+  --wave-rise-distance: 100svh;
   position: relative;
   width: calc(100% - 32px);
   max-width: 1080px;
@@ -85,6 +86,20 @@
   color: transparent;
 }
 
+.site-shell.is-loading .hero-grid-header > :not(.hero-logo),
+.site-shell.is-loading .hero-wave-panel,
+.site-shell.is-loading .ascii-rail,
+.site-shell.is-loading .hero-identity-band,
+.site-shell.is-loading .about-section,
+.site-shell.is-loading .projects-section,
+.site-shell.is-loading .education-section,
+.site-shell.is-loading .resume-section,
+.site-shell.is-loading .site-footer {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .site-shell.is-revealing .hero-grid-header > :not(.hero-logo),
 .site-shell.is-revealing .ascii-rail,
 .site-shell.is-revealing .hero-identity-band,
@@ -94,6 +109,7 @@
 .site-shell.is-revealing .resume-section,
 .site-shell.is-revealing .site-footer {
   opacity: 0;
+  pointer-events: none;
 }
 
 .site-shell.is-ready .hero-grid-header > :not(.hero-logo),
@@ -394,14 +410,15 @@
   filter: drop-shadow(0 0 18px rgba(123, 255, 157, 0.28));
 }
 
-.site-shell.is-revealing .wave-scene::before,
-.site-shell.is-revealing .wave-canvas {
-  clip-path: inset(100% 0 0 0);
-  animation: wave-lines-rise 980ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+.site-shell.is-revealing .hero-wave-panel,
+.site-shell.is-revealing .wave-scene {
+  overflow: visible;
 }
 
+.site-shell.is-revealing .wave-scene::before,
 .site-shell.is-revealing .wave-canvas {
-  transform: translateY(15%);
+  animation: wave-lines-rise 1280ms cubic-bezier(0.2, 0, 0.12, 1) both;
+  transform: translateY(var(--wave-rise-distance));
 }
 
 .ascii-rail {
@@ -967,12 +984,10 @@
 
 @keyframes wave-lines-rise {
   from {
-    clip-path: inset(100% 0 0 0);
-    transform: translateY(15%);
+    transform: translateY(var(--wave-rise-distance));
   }
 
   to {
-    clip-path: inset(0 0 0 0);
     transform: translateY(0);
   }
 }
