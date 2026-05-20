@@ -645,6 +645,10 @@ function App() {
     <main className="site-shell">
       <section className="hero" id="top">
         <header className="hero-grid-header">
+          <a href="#top" className="hero-logo" aria-label="Back to top">
+            <span className="hero-underline">JT</span>
+          </a>
+
           <div className="hero-status">
             <span className="hero-underline">PORTFOLIO://JAMES_T</span>
             <span className="hero-underline">PERTH / AU</span>
@@ -662,10 +666,6 @@ function App() {
             </a>
           </nav>
 
-          <a href="#top" className="hero-logo" aria-label="Back to top">
-            <span className="hero-underline">JT</span>
-          </a>
-
           <div className="hero-actions" aria-label="Social links">
             <a className="hero-social-link" href={linkedInUrl} target="_blank" rel="noreferrer" aria-label="LinkedIn">
               <LinkedInMark />
@@ -676,10 +676,7 @@ function App() {
           </div>
 
           <a className="resume-jump" href="#resume">
-            <span className="hero-underline resume-jump-full">↓ I'm just here for the resume ↓</span>
-            <span className="hero-underline resume-jump-compact" aria-hidden="true">
-              ↓ Resume ↓
-            </span>
+            <span className="hero-underline">↓ I'm just here for the resume ↓</span>
           </a>
         </header>
 
