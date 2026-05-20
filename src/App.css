@@ -420,17 +420,14 @@
 
 .site-shell.is-revealing .wave-scene::before,
 .site-shell.is-revealing .wave-canvas {
-  animation: wave-lines-rise 1280ms cubic-bezier(0.2, 0, 0.12, 1) both;
   height: var(--wave-reveal-height);
   inset: 0 0 auto;
-  transform: translateY(var(--wave-rise-distance));
 }
 
 .site-shell.is-settling .wave-scene::before,
 .site-shell.is-settling .wave-canvas {
   height: var(--wave-reveal-height);
   inset: 0 0 auto;
-  transform: translateY(0);
 }
 
 .ascii-rail {
@@ -994,16 +991,6 @@
   }
 }
 
-@keyframes wave-lines-rise {
-  from {
-    transform: translateY(var(--wave-rise-distance));
-  }
-
-  to {
-    transform: translateY(0);
-  }
-}
-
 @keyframes page-fade-in {
   from {
     opacity: 0;
@@ -1043,8 +1030,6 @@
   .loading-logo-flight,
   .loading-screen.is-flying .loading-logo-flight,
   .loading-screen.is-flying .loading-logo,
-  .site-shell.is-revealing .wave-scene::before,
-  .site-shell.is-revealing .wave-canvas,
   .site-shell.is-settling .hero-grid-header > :not(.hero-logo),
   .site-shell.is-settling .ascii-rail,
   .site-shell.is-settling .hero-identity-band,

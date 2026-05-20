@@ -432,8 +432,22 @@ function createVerticalWaveGeometry(width: number, height: number, columns: numb
   return geometry
 }
 
-function WaveMeshHero() {
+function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const introPhaseRef = useRef<IntroPhase>(introPhase)
+  const revealStartRef = useRef<number | null>(introPhase === 'revealing' ? performance.now() : null)
+
+  useEffect(() => {
+    introPhaseRef.current = introPhase
+
+    if (introPhase === 'revealing') {
+      revealStartRef.current = performance.now()
+    }
+
+    if (introPhase === 'loading') {
+      revealStartRef.current = null
+    }
+  }, [introPhase])
 
   useEffect(() => {
     const container = containerRef.current
@@ -463,19 +477,35 @@ function WaveMeshHero() {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
       uHover: { value: 0.08 },
+      uIntroProgress: { value: 0 },
     }
 
     const geometry = createVerticalWaveGeometry(16.8, 7.4, 86, 38)
     const material = new THREE.ShaderMaterial({
       fragmentShader: `
+        uniform float uIntroProgress;
         varying float vElevation;
+        varying vec2 vRevealCoord;
+
+        float smootherStep(float value) {
+          float t = clamp(value, 0.0, 1.0);
+          return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+        }
 
         void main() {
           float pulse = clamp(vElevation * 1.4 + 0.55, 0.0, 1.0);
           vec3 deep = vec3(0.25, 0.95, 0.48);
           vec3 hot = vec3(0.9, 1.0, 0.72);
           vec3 color = mix(deep, hot, pulse);
-          gl_FragColor = vec4(color, 0.82);
+          float sweepDelay = vRevealCoord.x * 0.42;
+          float lineProgress = smootherStep((uIntroProgress - sweepDelay) / (1.0 - sweepDelay));
+          float revealAlpha = smoothstep(vRevealCoord.y - 0.035, vRevealCoord.y + 0.035, lineProgress);
+
+          if (revealAlpha <= 0.01) {
+            discard;
+          }
+
+          gl_FragColor = vec4(color, 0.82 * revealAlpha);
         }
       `,
       transparent: true,
@@ -485,6 +515,7 @@ function WaveMeshHero() {
         uniform vec2 uMouse;
         uniform float uHover;
         varying float vElevation;
+        varying vec2 vRevealCoord;
 
         void main() {
           vec3 pos = position;
@@ -506,6 +537,7 @@ function WaveMeshHero() {
           pos.xy += push;
           pos.z = baseWave + cursorRipple;
           vElevation = pos.z;
+          vRevealCoord = vec2((position.x + 8.4) / 16.8, (position.y + 3.7) / 7.4);
 
           gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
@@ -553,6 +585,16 @@ function WaveMeshHero() {
       uniforms.uTime.value = timer.getElapsed()
       uniforms.uMouse.value.lerp(targetMouse, 0.045)
       uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
+
+      if (introPhaseRef.current === 'revealing') {
+        const revealStart = revealStartRef.current ?? performance.now()
+        uniforms.uIntroProgress.value = THREE.MathUtils.clamp((performance.now() - revealStart) / 1280, 0, 1)
+      } else if (introPhaseRef.current === 'loading') {
+        uniforms.uIntroProgress.value = 0
+      } else {
+        uniforms.uIntroProgress.value = 1
+      }
+
       waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.11) * 0.014 - 0.045
       renderer.render(scene, camera)
       frameId = window.requestAnimationFrame(animate)
@@ -819,7 +861,7 @@ function App() {
         </header>
 
         <div className="hero-wave-panel" ref={wavePanelRef}>
-          <WaveMeshHero />
+          <WaveMeshHero introPhase={introPhase} />
         </div>
 
         <AsciiRail />
