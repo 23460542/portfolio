@@ -481,6 +481,8 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
     const uniforms = {
       uTime: { value: 0 },
       uMouse: { value: new THREE.Vector2(0, 0) },
+      uCursorAcceleration: { value: new THREE.Vector2(0, 0) },
+      uCursorImpulse: { value: 0 },
       uCursorTug: { value: new THREE.Vector2(0, 0) },
       uHover: { value: 0 },
       uIntroProgress: { value: 0 },
@@ -519,6 +521,8 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
       vertexShader: `
         uniform float uTime;
         uniform vec2 uMouse;
+        uniform vec2 uCursorAcceleration;
+        uniform float uCursorImpulse;
         uniform vec2 uCursorTug;
         uniform float uHover;
         varying float vElevation;
@@ -539,15 +543,18 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
 
           vec2 cursorDelta = normalized - uMouse;
           float dist = length(cursorDelta);
-          float catchInfluence = exp(-dist * 4.6) * uHover;
-          float tugStrength = clamp(length(uCursorTug) * 2.7, 0.0, 1.0);
-          vec2 tugDirection = uCursorTug / max(length(uCursorTug), 0.001);
-          float trailingSide = 1.0 - smoothstep(-0.46, 0.34, dot(cursorDelta, tugDirection));
-          float followInfluence = catchInfluence * mix(0.72, 1.18, trailingSide);
-          float forwardPull = catchInfluence * (0.12 + tugStrength * 0.16);
-          float trailingLift = followInfluence * tugStrength * 0.08;
+          float impulse = clamp(uCursorImpulse, 0.0, 2.25);
+          float catchFalloff = mix(4.3, 1.85, clamp(impulse * 0.55, 0.0, 1.0));
+          float catchInfluence = exp(-dist * catchFalloff) * uHover;
+          float tugStrength = clamp(length(uCursorTug) * (3.6 + impulse * 4.8), 0.0, 2.6);
+          vec2 motionVector = uCursorTug * 0.78 + uCursorAcceleration * 0.32;
+          vec2 motionDirection = motionVector / max(length(motionVector), 0.001);
+          float trailingSide = 1.0 - smoothstep(-0.62, 0.28, dot(cursorDelta, motionDirection));
+          float followInfluence = catchInfluence * mix(0.9, 2.8, trailingSide) * (1.0 + impulse * 0.85);
+          float forwardPull = catchInfluence * (0.26 + tugStrength * 0.46 + impulse * 0.68);
+          float trailingLift = followInfluence * (tugStrength * 0.22 + impulse * 0.36);
 
-          pos.xy += uCursorTug * followInfluence * 0.22;
+          pos.xy += (uCursorTug * 0.62 + uCursorAcceleration * 0.18) * followInfluence;
           pos.z = baseWave + forwardPull + trailingLift;
           vElevation = pos.z;
           vRevealCoord = vec2((position.x + 8.4) / 16.8, (position.y + 3.7) / 7.4);
@@ -565,7 +572,16 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
 
     let frameId = 0
     let targetHover = 0
+    let targetImpulse = 0
+    let hasPointerSample = false
+    let lastPointerSampleTime = performance.now()
     let previousTimestamp = performance.now()
+    const accelerationTarget = new THREE.Vector2(0, 0)
+    const currentVelocity = new THREE.Vector2(0, 0)
+    const latestAcceleration = new THREE.Vector2(0, 0)
+    const previousPointer = new THREE.Vector2(0, 0)
+    const previousVelocity = new THREE.Vector2(0, 0)
+    const sampledMouse = new THREE.Vector2(0, 0)
     const targetMouse = new THREE.Vector2(0, 0)
     const tugTarget = new THREE.Vector2(0, 0)
     const timer = new THREE.Timer()
@@ -589,13 +605,45 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
 
       const x = ((event.clientX - rect.left) / rect.width) * 2 - 1
       const y = -(((event.clientY - rect.top) / rect.height) * 2 - 1)
+      const sampleTime = performance.now()
+      const sampleDelta = Math.min(Math.max((sampleTime - lastPointerSampleTime) / 1000, 1 / 240), 0.1)
 
-      targetMouse.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1))
+      sampledMouse.set(THREE.MathUtils.clamp(x, -1, 1), THREE.MathUtils.clamp(y, -1, 1))
+
+      if (hasPointerSample) {
+        currentVelocity.subVectors(sampledMouse, previousPointer).divideScalar(sampleDelta)
+        latestAcceleration
+          .subVectors(currentVelocity, previousVelocity)
+          .multiplyScalar(0.024)
+          .clampLength(0, 1.55)
+        targetImpulse = Math.max(
+          targetImpulse,
+          THREE.MathUtils.clamp(currentVelocity.length() * 0.18 + latestAcceleration.length() * 1.55, 0, 2.25),
+        )
+        previousVelocity.copy(currentVelocity)
+      } else {
+        currentVelocity.set(0, 0)
+        latestAcceleration.set(0, 0)
+        previousVelocity.set(0, 0)
+        hasPointerSample = true
+      }
+
+      previousPointer.copy(sampledMouse)
+      targetMouse.copy(sampledMouse)
       targetHover = 1
+      lastPointerSampleTime = sampleTime
+    }
+
+    function releaseCursor() {
+      targetHover = 0
+      targetImpulse = 0
+      hasPointerSample = false
+      latestAcceleration.set(0, 0)
+      previousVelocity.set(0, 0)
     }
 
     function onPointerLeave() {
-      targetHover = 0
+      releaseCursor()
     }
 
     function onWindowPointerMove(event: globalThis.PointerEvent) {
@@ -607,7 +655,7 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
         event.clientY <= rect.bottom
 
       if (!isInsideHost) {
-        targetHover = 0
+        releaseCursor()
       }
     }
 
@@ -620,16 +668,38 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
       uniforms.uMouse.value.x = THREE.MathUtils.damp(uniforms.uMouse.value.x, targetMouse.x, 7.6, deltaTime)
       uniforms.uMouse.value.y = THREE.MathUtils.damp(uniforms.uMouse.value.y, targetMouse.y, 7.6, deltaTime)
       uniforms.uHover.value = THREE.MathUtils.damp(uniforms.uHover.value, targetHover, 8.4, deltaTime)
+      targetImpulse = THREE.MathUtils.damp(targetImpulse, 0, 3.6, deltaTime)
+      latestAcceleration.multiplyScalar(Math.exp(-5.6 * deltaTime))
+      accelerationTarget.copy(latestAcceleration).multiplyScalar(uniforms.uHover.value)
+      uniforms.uCursorImpulse.value = THREE.MathUtils.damp(
+        uniforms.uCursorImpulse.value,
+        targetImpulse * uniforms.uHover.value,
+        10.8,
+        deltaTime,
+      )
+      uniforms.uCursorAcceleration.value.x = THREE.MathUtils.damp(
+        uniforms.uCursorAcceleration.value.x,
+        accelerationTarget.x,
+        9.4,
+        deltaTime,
+      )
+      uniforms.uCursorAcceleration.value.y = THREE.MathUtils.damp(
+        uniforms.uCursorAcceleration.value.y,
+        accelerationTarget.y,
+        9.4,
+        deltaTime,
+      )
       tugTarget
         .subVectors(targetMouse, uniforms.uMouse.value)
-        .multiplyScalar(uniforms.uHover.value)
-        .clampLength(0, 0.42)
-      uniforms.uCursorTug.value.x = THREE.MathUtils.damp(uniforms.uCursorTug.value.x, tugTarget.x, 9.8, deltaTime)
-      uniforms.uCursorTug.value.y = THREE.MathUtils.damp(uniforms.uCursorTug.value.y, tugTarget.y, 9.8, deltaTime)
+        .multiplyScalar(uniforms.uHover.value * (1 + uniforms.uCursorImpulse.value * 1.3))
+        .clampLength(0, 0.62 + uniforms.uCursorImpulse.value * 0.48)
+      uniforms.uCursorTug.value.x = THREE.MathUtils.damp(uniforms.uCursorTug.value.x, tugTarget.x, 11.4, deltaTime)
+      uniforms.uCursorTug.value.y = THREE.MathUtils.damp(uniforms.uCursorTug.value.y, tugTarget.y, 11.4, deltaTime)
 
       const cursorX = ((uniforms.uMouse.value.x + 1) / 2) * host.clientWidth
       const cursorY = ((1 - uniforms.uMouse.value.y) / 2) * host.clientHeight
-      cursorDot.style.transform = `translate3d(${cursorX.toFixed(2)}px, ${cursorY.toFixed(2)}px, 0) translate(-50%, -50%)`
+      const cursorScale = 1 + uniforms.uCursorImpulse.value * 0.52
+      cursorDot.style.transform = `translate3d(${cursorX.toFixed(2)}px, ${cursorY.toFixed(2)}px, 0) translate(-50%, -50%) scale(${cursorScale.toFixed(3)})`
       cursorDot.style.opacity = `${THREE.MathUtils.smoothstep(uniforms.uHover.value, 0.08, 0.58).toFixed(3)}`
 
       if (introPhaseRef.current === 'revealing') {
