@@ -551,11 +551,11 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
           vec2 motionDirection = motionVector / max(length(motionVector), 0.001);
           float trailingSide = 1.0 - smoothstep(-0.62, 0.28, dot(cursorDelta, motionDirection));
           float followInfluence = catchInfluence * mix(0.9, 2.8, trailingSide) * (1.0 + impulse * 0.85);
-          float forwardPull = catchInfluence * (0.26 + tugStrength * 0.46 + impulse * 0.68);
-          float trailingLift = followInfluence * (tugStrength * 0.22 + impulse * 0.36);
+          float depthInfluence = exp(-dist * 4.3) * uHover;
+          float forwardPull = depthInfluence * 0.34;
 
           pos.xy += (uCursorTug * 0.62 + uCursorAcceleration * 0.18) * followInfluence;
-          pos.z = baseWave + forwardPull + trailingLift;
+          pos.z = baseWave + forwardPull;
           vElevation = pos.z;
           vRevealCoord = vec2((position.x + 8.4) / 16.8, (position.y + 3.7) / 7.4);
 
