@@ -101,6 +101,8 @@
 }
 
 .site-shell.is-revealing .hero-grid-header > :not(.hero-logo),
+.site-shell.is-revealing .ascii-rail,
+.site-shell.is-revealing .hero-identity-band,
 .site-shell.is-revealing .about-section,
 .site-shell.is-revealing .projects-section,
 .site-shell.is-revealing .education-section,
@@ -110,26 +112,9 @@
   pointer-events: none;
 }
 
-.site-shell.is-revealing .ascii-rail,
-.site-shell.is-revealing .hero-identity-band {
-  z-index: 6;
-}
-
-.site-shell.is-revealing .ascii-rail > *,
-.site-shell.is-revealing .hero-identity-band > * {
-  opacity: 0;
-}
-
-.site-shell.is-revealing .hero-identity-band {
-  background:
-    linear-gradient(180deg, rgba(0, 5, 3, 0.96), rgba(0, 7, 5, 0.98)),
-    radial-gradient(circle at 82% 44%, rgba(123, 255, 157, 0.08), transparent 34%),
-    #010907;
-}
-
 .site-shell.is-ready .hero-grid-header > :not(.hero-logo),
-.site-shell.is-ready .ascii-rail > *,
-.site-shell.is-ready .hero-identity-band > *,
+.site-shell.is-ready .ascii-rail,
+.site-shell.is-ready .hero-identity-band,
 .site-shell.is-ready .about-section,
 .site-shell.is-ready .projects-section,
 .site-shell.is-ready .education-section,
@@ -1049,8 +1034,8 @@
   .site-shell.is-revealing .wave-scene::before,
   .site-shell.is-revealing .wave-canvas,
   .site-shell.is-ready .hero-grid-header > :not(.hero-logo),
-  .site-shell.is-ready .ascii-rail > *,
-  .site-shell.is-ready .hero-identity-band > *,
+  .site-shell.is-ready .ascii-rail,
+  .site-shell.is-ready .hero-identity-band,
   .site-shell.is-ready .about-section,
   .site-shell.is-ready .projects-section,
   .site-shell.is-ready .education-section,
