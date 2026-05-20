@@ -8,7 +8,17 @@ import {
   Plus,
   RotateCcw,
 } from 'lucide-react'
-import { type CSSProperties, type PointerEvent, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type CSSProperties,
+  type PointerEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import * as THREE from 'three'
 import './App.css'
 
@@ -259,6 +269,74 @@ function BinaryTicker({ length = 32 }: { length?: number }) {
   )
 }
 
+function LoadingScreen({
+  onFinished,
+  targetRef,
+}: {
+  onFinished: () => void
+  targetRef: RefObject<HTMLAnchorElement>
+}) {
+  const logoRef = useRef<HTMLDivElement | null>(null)
+  const [isFlying, setIsFlying] = useState(false)
+
+  const updateTarget = useCallback(() => {
+    const logo = logoRef.current
+    const target = targetRef.current
+
+    if (!logo || !target) {
+      return
+    }
+
+    const logoRect = logo.getBoundingClientRect()
+    const targetMark = target.querySelector<HTMLElement>('.hero-underline')
+    const targetRect = (targetMark ?? target).getBoundingClientRect()
+    const logoCenterX = logoRect.left + logoRect.width / 2
+    const logoCenterY = logoRect.top + logoRect.height / 2
+    const targetCenterX = targetRect.left + targetRect.width / 2
+    const targetCenterY = targetRect.top + targetRect.height / 2
+    const targetScale = Math.min(targetRect.width / logoRect.width, targetRect.height / logoRect.height)
+
+    logo.style.setProperty('--loader-shift-x', `${targetCenterX - logoCenterX}px`)
+    logo.style.setProperty('--loader-shift-y', `${targetCenterY - logoCenterY}px`)
+    logo.style.setProperty('--loader-scale', `${Math.max(0.34, Math.min(targetScale, 0.72))}`)
+  }, [targetRef])
+
+  useLayoutEffect(() => {
+    updateTarget()
+    window.addEventListener('resize', updateTarget)
+    document.fonts?.ready.then(updateTarget).catch(() => undefined)
+
+    return () => window.removeEventListener('resize', updateTarget)
+  }, [updateTarget])
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const flyTimer = window.setTimeout(() => {
+      updateTarget()
+      setIsFlying(true)
+    }, prefersReducedMotion ? 140 : 980)
+    const finishTimer = window.setTimeout(onFinished, prefersReducedMotion ? 460 : 1900)
+
+    return () => {
+      window.clearTimeout(flyTimer)
+      window.clearTimeout(finishTimer)
+    }
+  }, [onFinished, updateTarget])
+
+  return (
+    <div className={`loading-screen ${isFlying ? 'is-flying' : ''}`} aria-label="Loading portfolio">
+      <div className="loading-screen-inner">
+        <div className="loading-logo-flight" ref={logoRef} aria-hidden="true">
+          <div className="loading-logo">JT</div>
+        </div>
+        <div className="loading-pulse" aria-hidden="true">
+          <span />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AsciiRail() {
   return (
     <div className="ascii-rail" aria-hidden="true">
@@ -441,7 +519,8 @@ function WaveMeshHero() {
     let frameId = 0
     let targetHover = 0.08
     const targetMouse = new THREE.Vector2(0, 0)
-    const clock = new THREE.Clock()
+    const timer = new THREE.Timer()
+    timer.connect(document)
 
     function resize() {
       const { width, height } = host.getBoundingClientRect()
@@ -467,8 +546,9 @@ function WaveMeshHero() {
       targetHover = 0.08
     }
 
-    function animate() {
-      uniforms.uTime.value = clock.getElapsedTime()
+    function animate(timestamp?: number) {
+      timer.update(timestamp)
+      uniforms.uTime.value = timer.getElapsed()
       uniforms.uMouse.value.lerp(targetMouse, 0.045)
       uniforms.uHover.value = THREE.MathUtils.lerp(uniforms.uHover.value, targetHover, 0.045)
       waveLines.rotation.z = Math.sin(uniforms.uTime.value * 0.11) * 0.014 - 0.045
@@ -488,6 +568,7 @@ function WaveMeshHero() {
       resizeObserver.disconnect()
       host.removeEventListener('pointermove', onPointerMove)
       host.removeEventListener('pointerleave', onPointerLeave)
+      timer.dispose()
       geometry.dispose()
       material.dispose()
       renderer.dispose()
@@ -641,11 +722,17 @@ function ResumeViewer() {
 }
 
 function App() {
+  const logoHomeRef = useRef<HTMLAnchorElement | null>(null)
+  const [showLoader, setShowLoader] = useState(true)
+  const finishLoading = useCallback(() => setShowLoader(false), [])
+
   return (
-    <main className="site-shell">
+    <main className={`site-shell ${showLoader ? 'is-loading' : 'is-loaded'}`}>
+      {showLoader ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
+
       <section className="hero" id="top">
         <header className="hero-grid-header">
-          <a href="#top" className="hero-logo" aria-label="Back to top">
+          <a href="#top" className="hero-logo" aria-label="Back to top" ref={logoHomeRef}>
             <span className="hero-underline">JT</span>
           </a>
 
@@ -676,7 +763,10 @@ function App() {
           </div>
 
           <a className="resume-jump" href="#resume">
-            <span className="hero-underline">↓ I'm just here for the resume ↓</span>
+            <span className="hero-underline resume-jump-label resume-jump-label-full">
+              ↓ I'm just here for the resume ↓
+            </span>
+            <span className="hero-underline resume-jump-label resume-jump-label-compact">v Resume v</span>
           </a>
         </header>
 
