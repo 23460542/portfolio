@@ -146,19 +146,19 @@ const projects: ProjectPanel[] = [
 
 const education: EducationItem[] = [
   {
-    period: '2026 -> TBD',
-    title: 'Education entry placeholder',
-    detail: 'Add university, certification, cohort, or self-directed study details here.',
+    period: '2015 -> 2021',
+    title: 'Aquinas College',
+    detail: 'I was deeply involved in the performing arts, no school day was complete without a couple of hours of rehearsal.',
   },
   {
-    period: '2025 -> TBD',
-    title: 'Systems, data, and markets',
-    detail: 'A future note for coursework, independent research, or project-based learning.',
+    period: '2022 -> 2022',
+    title: 'WAAPA',
+    detail: 'Honing my musical talents, I had to learn how to work well in a team.',
   },
   {
-    period: '2024 -> TBD',
-    title: 'Machine learning and cloud foundations',
-    detail: 'A compact slot for AWS, AI, analytics, or engineering credentials.',
+    period: '2023 -> 2027',
+    title: 'University of Western Australia',
+    detail: 'Majoring in Data Science and Cybersecurity with a minor in German, UWA has kept me busy in all aspects of life.',
   },
 ]
 
@@ -779,11 +779,19 @@ function App() {
       return
     }
 
-    const { top } = wavePanel.getBoundingClientRect()
+    const { left, top } = wavePanel.getBoundingClientRect()
     const revealHeight = Math.max(window.innerHeight - top, 0)
+    const viewportMax = Math.max(window.innerWidth, window.innerHeight)
 
     shell.style.setProperty('--wave-reveal-height', `${revealHeight}px`)
     shell.style.setProperty('--wave-rise-distance', `${revealHeight}px`)
+    shell.style.setProperty('--wave-glow-x', `${window.innerWidth * 0.52 - left}px`)
+    shell.style.setProperty('--wave-glow-y', `${window.innerHeight * 0.47 - top}px`)
+    shell.style.setProperty('--wave-glow-radius', `${viewportMax * 0.34}px`)
+    shell.style.setProperty('--wave-mask-x', `${window.innerWidth * 0.5 - left}px`)
+    shell.style.setProperty('--wave-mask-y', `${window.innerHeight * 0.5 - top}px`)
+    shell.style.setProperty('--wave-mask-rx', `${window.innerWidth * 0.54}px`)
+    shell.style.setProperty('--wave-mask-ry', `${window.innerHeight * 0.48}px`)
   }, [])
 
   const finishLoading = useCallback(() => {
