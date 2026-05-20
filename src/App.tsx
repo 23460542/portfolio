@@ -641,11 +641,87 @@ function ResumeViewer() {
 }
 
 function App() {
+  const headerLogoRef = useRef<HTMLAnchorElement | null>(null)
+  const loaderLogoRef = useRef<HTMLDivElement | null>(null)
+  const [loadingPhase, setLoadingPhase] = useState<'loading' | 'fly' | 'done'>('loading')
+  const [loaderTransform, setLoaderTransform] = useState<{ dx: number; dy: number; scale: number }>({
+    dx: 0,
+    dy: 0,
+    scale: 1,
+  })
+
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) {
+      setLoadingPhase('done')
+      return
+    }
+
+    const loadingTimer = window.setTimeout(() => {
+      setLoadingPhase('fly')
+
+      window.requestAnimationFrame(() => {
+        const headerLogo = headerLogoRef.current
+        const loaderLogo = loaderLogoRef.current
+
+        if (!headerLogo || !loaderLogo) {
+          setLoadingPhase('done')
+          return
+        }
+
+        const targetRect = headerLogo.getBoundingClientRect()
+        const sourceRect = loaderLogo.getBoundingClientRect()
+
+        const targetCenterX = targetRect.left + targetRect.width / 2
+        const targetCenterY = targetRect.top + targetRect.height / 2
+        const sourceCenterX = sourceRect.left + sourceRect.width / 2
+        const sourceCenterY = sourceRect.top + sourceRect.height / 2
+
+        setLoaderTransform({
+          dx: targetCenterX - sourceCenterX,
+          dy: targetCenterY - sourceCenterY,
+          scale: Math.max(targetRect.width / Math.max(sourceRect.width, 1), 0.2),
+        })
+      })
+    }, 900)
+
+    return () => window.clearTimeout(loadingTimer)
+  }, [])
+
   return (
     <main className="site-shell">
       <section className="hero" id="top">
+        {loadingPhase !== 'done' ? (
+          <div
+            className={`loading-screen ${loadingPhase === 'fly' ? 'is-fly' : ''}`}
+            style={
+              {
+                '--loader-dx': `${loaderTransform.dx}px`,
+                '--loader-dy': `${loaderTransform.dy}px`,
+                '--loader-scale': loaderTransform.scale,
+              } as CSSProperties
+            }
+            onAnimationEnd={() => {
+              if (loadingPhase === 'fly') {
+                setLoadingPhase('done')
+              }
+            }}
+            aria-hidden="true"
+          >
+            <div className="loading-logo" ref={loaderLogoRef}>
+              JT
+            </div>
+          </div>
+        ) : null}
+
         <header className="hero-grid-header">
-          <a href="#top" className="hero-logo" aria-label="Back to top">
+          <a
+            href="#top"
+            className={`hero-logo ${loadingPhase !== 'done' ? 'hero-logo-hidden' : ''}`}
+            aria-label="Back to top"
+            ref={headerLogoRef}
+          >
             <span className="hero-underline">JT</span>
           </a>
 
