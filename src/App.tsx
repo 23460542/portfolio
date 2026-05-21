@@ -327,6 +327,13 @@ function LoadingScreen({
 
   return (
     <div className={`loading-screen ${isFlying ? 'is-flying' : ''}`} aria-label="Loading portfolio">
+      <div className="loading-screen-panels" aria-hidden="true">
+        <span className="loading-panel loading-panel-top" />
+        <span className="loading-panel loading-panel-right" />
+        <span className="loading-panel loading-panel-bottom" />
+        <span className="loading-panel loading-panel-left" />
+      </div>
+
       <div className="loading-screen-inner">
         <div className="loading-logo-flight" ref={logoRef} aria-hidden="true">
           <div className="loading-logo">JT</div>

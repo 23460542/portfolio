@@ -3,6 +3,9 @@
 }
 
 .site-shell {
+  --hero-margin-x: max(8px, calc((100vw - 1420px) / 2));
+  --hero-margin-top: 10px;
+  --pastel-margin: #bff0b4;
   --wave-glow-radius: 34vmax;
   --wave-glow-x: 52vw;
   --wave-glow-y: 47vh;
@@ -26,15 +29,73 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #bff0b4;
+  background: transparent;
   color: #062414;
+  isolation: isolate;
 }
 
-.loading-screen.is-flying {
-  animation: loading-screen-fade 760ms ease 600ms forwards;
+.loading-screen-panels {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.loading-panel {
+  position: absolute;
+  background: var(--pastel-margin);
+  will-change: height, width, top, bottom, opacity;
+}
+
+.loading-panel-top {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 50%;
+}
+
+.loading-panel-bottom {
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 50%;
+}
+
+.loading-panel-left,
+.loading-panel-right {
+  top: 50%;
+  bottom: 50%;
+  width: 50%;
+}
+
+.loading-panel-left {
+  left: 0;
+}
+
+.loading-panel-right {
+  right: 0;
+}
+
+.loading-screen.is-flying .loading-panel-top {
+  animation: loading-panel-top-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.loading-screen.is-flying .loading-panel-bottom {
+  animation: loading-panel-bottom-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.loading-screen.is-flying .loading-panel-left {
+  animation: loading-panel-left-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.loading-screen.is-flying .loading-panel-right {
+  animation: loading-panel-right-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-screen-inner {
+  position: relative;
+  z-index: 1;
   display: grid;
   justify-items: center;
   gap: 22px;
@@ -161,7 +222,11 @@
   min-height: 720px;
   margin-left: calc(50% - 50vw);
   grid-template-rows: clamp(88px, 10svh, 112px) minmax(0, 1fr) 34px 33svh 34px;
-  padding: 10px max(8px, calc((100vw - 1420px) / 2)) 10px;
+  padding: var(--hero-margin-top) var(--hero-margin-x) 0;
+  background:
+    linear-gradient(var(--pastel-margin), var(--pastel-margin)) top / 100% var(--hero-margin-top) no-repeat,
+    linear-gradient(var(--pastel-margin), var(--pastel-margin)) left / var(--hero-margin-x) 100% no-repeat,
+    linear-gradient(var(--pastel-margin), var(--pastel-margin)) right / var(--hero-margin-x) 100% no-repeat;
   overflow: hidden;
 }
 
@@ -1019,9 +1084,31 @@
   }
 }
 
-@keyframes loading-screen-fade {
+@keyframes loading-panel-top-open {
   to {
-    opacity: 0;
+    height: var(--hero-margin-top);
+  }
+}
+
+@keyframes loading-panel-bottom-open {
+  to {
+    height: 0;
+  }
+}
+
+@keyframes loading-panel-left-open {
+  to {
+    top: var(--hero-margin-top);
+    bottom: 0;
+    width: var(--hero-margin-x);
+  }
+}
+
+@keyframes loading-panel-right-open {
+  to {
+    top: var(--hero-margin-top);
+    bottom: 0;
+    width: var(--hero-margin-x);
   }
 }
 
@@ -1056,14 +1143,13 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loading-screen.is-flying {
-    animation-delay: 0ms;
-    animation-duration: 1ms;
-  }
-
   .loading-logo-flight,
   .loading-screen.is-flying .loading-logo-flight,
   .loading-screen.is-flying .loading-logo,
+  .loading-screen.is-flying .loading-panel-top,
+  .loading-screen.is-flying .loading-panel-bottom,
+  .loading-screen.is-flying .loading-panel-left,
+  .loading-screen.is-flying .loading-panel-right,
   .site-shell.is-settling .hero-grid-header > :not(.hero-logo),
   .site-shell.is-settling .ascii-rail,
   .site-shell.is-settling .hero-identity-band,
@@ -1079,6 +1165,8 @@
 
 @media (max-width: 860px) {
   .site-shell {
+    --hero-margin-x: 7px;
+    --hero-margin-top: 7px;
     width: calc(100% - 22px);
     max-width: 680px;
   }
@@ -1089,10 +1177,9 @@
   }
 
   .hero {
-    height: auto;
-    min-height: 820px;
-    grid-template-rows: auto minmax(260px, 1fr) 32px minmax(250px, 33svh) 32px;
-    padding: 7px;
+    height: 100svh;
+    min-height: 0;
+    grid-template-rows: auto minmax(150px, 1fr) 32px minmax(180px, 28svh) 32px;
   }
 
   .hero-grid-header {
@@ -1143,6 +1230,7 @@
 
   .ascii-rail {
     grid-template-columns: minmax(70px, 0.5fr) minmax(160px, 1fr) minmax(70px, 0.5fr);
+    min-height: 32px;
     font-size: 0.62rem;
   }
 
@@ -1216,8 +1304,8 @@
   }
 
   .hero {
-    min-height: 780px;
-    grid-template-rows: auto minmax(210px, 1fr) 30px minmax(230px, 33svh) 30px;
+    min-height: 0;
+    grid-template-rows: auto minmax(96px, 1fr) 28px minmax(118px, 22svh) 28px;
   }
 
   .hero-grid-header {
@@ -1246,6 +1334,10 @@
     min-height: 44px;
     padding: 8px 4px;
     font-size: clamp(0.78rem, 3.5vw, 0.92rem);
+  }
+
+  .ascii-rail {
+    min-height: 28px;
   }
 
   .resume-jump-label-full {
