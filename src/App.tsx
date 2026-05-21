@@ -954,8 +954,8 @@ function App() {
           </a>
 
           <div className="hero-status">
-            <span className="hero-underline">PORTFOLIO://JAMES_T</span>
-            <span className="hero-underline">PERTH / AU</span>
+            <span className="hero-underline">PORTFOLIO://JAMES_TURNER</span>
+            <span className="hero-underline">UWA / AU</span>
           </div>
 
           <nav className="hero-nav" aria-label="Portfolio sections">
@@ -983,7 +983,7 @@ function App() {
             <span className="hero-underline resume-jump-label resume-jump-label-full">
               ↓ I'm just here for the resume ↓
             </span>
-            <span className="hero-underline resume-jump-label resume-jump-label-compact">v Resume v</span>
+            <span className="hero-underline resume-jump-label resume-jump-label-compact">↓ Resume ↓</span>
           </a>
         </header>
 
@@ -997,26 +997,27 @@ function App() {
       </section>
 
       <section className="about-section" id="about">
-        <SectionHeader eyebrow="00_about" title="Signal, risk, interface." />
+        <SectionHeader eyebrow="00_about" title="READ(about)ME.md" />
         <div className="about-copy">
           <p>
-            I work on analytics-heavy systems where the interface has to stay calm while the data gets
-            loud: trading controls, wallet analysis, market feeds, and audit-friendly automation.
+            I always like to put my education into practice; where that used to mean playing my guitar 
+            in jazz bars and pubs, now I turn real-world data into real-world results. 
           </p>
           <p>
-            The site keeps that same shape: compact, terminal-adjacent, graph-forward, and intentionally
-            editable as the underlying projects mature.
+            With my interest in financial markets driving my data science studies, it was only natural 
+            that I would start building quant trading applications, leveraging large-scale data analysis 
+            techniques and machine learning. 
           </p>
         </div>
       </section>
 
       <section className="projects-section" id="projects">
-        <SectionHeader eyebrow="01_projects" title="Click, drag, inspect." />
+        <SectionHeader eyebrow="01_projects" title="SUMMARISE COMMITS (projects)" />
         <ProjectsBoard />
       </section>
 
       <section className="education-section" id="education">
-        <SectionHeader eyebrow="02_education" title="Education queue." />
+        <SectionHeader eyebrow="02_education" title="COLLABORATION(at university).md" />
         <div className="education-list">
           {education.map((item) => (
             <article className="education-item" key={`${item.period}-${item.title}`}>
