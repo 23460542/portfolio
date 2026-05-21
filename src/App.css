@@ -112,7 +112,7 @@
 }
 
 .loading-logo {
-  color: #062414;
+  display: grid;
   font-family: 'Banko Display', 'Fliege Mono', monospace;
   font-size: clamp(4.8rem, 15vw, 8.8rem);
   line-height: 0.82;
@@ -120,14 +120,38 @@
   will-change: transform;
 }
 
+.loading-logo-layer {
+  grid-area: 1 / 1;
+}
+
+.loading-logo-base {
+  color: #062414;
+}
+
+.loading-logo-reveal {
+  color: var(--paper);
+  opacity: 0;
+  mask-image: linear-gradient(#000, #000);
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: 0% 0%;
+  -webkit-mask-image: linear-gradient(#000, #000);
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 0% 0%;
+  will-change: opacity, mask-size;
+}
+
 .loading-screen.is-flying .loading-logo-flight {
   animation: loading-logo-fly 860ms cubic-bezier(0.68, 0, 0.18, 1) forwards;
 }
 
 .loading-screen.is-flying .loading-logo {
-  animation:
-    loading-logo-scale 860ms cubic-bezier(0.68, 0, 0.18, 1) forwards,
-    loading-logo-color-shift 860ms ease forwards;
+  animation: loading-logo-scale 860ms cubic-bezier(0.68, 0, 0.18, 1) forwards;
+}
+
+.loading-screen.is-flying .loading-logo-reveal {
+  animation: loading-logo-reveal-mask 920ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-pulse {
@@ -154,6 +178,7 @@
   transition: opacity 360ms ease, transform 360ms ease;
 }
 
+.hero-logo,
 .hero-grid-header > :not(.hero-logo),
 .ascii-rail,
 .hero-identity-band,
@@ -165,13 +190,9 @@
   will-change: opacity, transform;
 }
 
-.site-shell.is-loading .hero-logo,
-.site-shell.is-revealing .hero-logo {
-  color: transparent;
-}
-
-.site-shell.is-revealing .hero-logo {
-  animation: hero-logo-handoff 720ms ease 520ms forwards;
+.site-shell.has-loader .hero-logo {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .site-shell.is-loading .hero-grid-header > :not(.hero-logo),
@@ -1098,20 +1119,27 @@
   }
 }
 
-@keyframes loading-logo-color-shift {
-  0%,
-  58% {
-    color: #062414;
-  }
-
-  100% {
-    color: var(--paper);
-  }
-}
-
 @keyframes loading-pulse-fill {
   to {
     transform: scaleX(1);
+  }
+}
+
+@keyframes loading-logo-reveal-mask {
+  0% {
+    opacity: 0;
+    mask-size: 0% 0%;
+    -webkit-mask-size: 0% 0%;
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 1;
+    mask-size: 140% 140%;
+    -webkit-mask-size: 140% 140%;
   }
 }
 
@@ -1155,16 +1183,6 @@
   }
 }
 
-@keyframes hero-logo-handoff {
-  0% {
-    color: transparent;
-  }
-
-  100% {
-    color: var(--paper);
-  }
-}
-
 @keyframes identity-scroll {
   from {
     transform: translateX(0);
@@ -1189,6 +1207,7 @@
   .loading-logo-flight,
   .loading-screen.is-flying .loading-logo-flight,
   .loading-screen.is-flying .loading-logo,
+  .loading-screen.is-flying .loading-logo-reveal,
   .loading-screen.is-flying .loading-panel-top,
   .loading-screen.is-flying .loading-panel-bottom,
   .loading-screen.is-flying .loading-panel-left,

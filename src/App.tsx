@@ -339,7 +339,10 @@ function LoadingScreen({
 
       <div className="loading-screen-inner">
         <div className="loading-logo-flight" ref={logoRef} aria-hidden="true">
-          <div className="loading-logo">JT</div>
+          <div className="loading-logo">
+            <span className="loading-logo-layer loading-logo-base">JT</span>
+            <span className="loading-logo-layer loading-logo-reveal">JT</span>
+          </div>
         </div>
         <div className="loading-pulse" aria-hidden="true">
           <span />
@@ -959,7 +962,7 @@ function App() {
   }, [introPhase])
 
   return (
-    <main className={`site-shell is-${introPhase}`} ref={shellRef}>
+    <main className={`site-shell is-${introPhase} ${showLoader ? 'has-loader' : ''}`} ref={shellRef}>
       {showLoader ? (
         <LoadingScreen onFinished={finishLoading} onRevealStart={startReveal} targetRef={logoHomeRef} />
       ) : null}
