@@ -955,7 +955,7 @@ function App() {
 
           <div className="hero-status">
             <span className="hero-underline">PORTFOLIO://JAMES_TURNER</span>
-            <span className="hero-underline">UWA / AU</span>
+            <span className="hero-underline">UWA / 23460542</span>
           </div>
 
           <nav className="hero-nav" aria-label="Portfolio sections">
