@@ -5,7 +5,7 @@
 .site-shell {
   --hero-margin-x: max(8px, calc((100vw - 1420px) / 2));
   --hero-margin-top: 10px;
-  --pastel-margin: #bff0b4;
+  --pastel-margin: #f2ffe0;
   --wave-glow-radius: 34vmax;
   --wave-glow-x: 52vw;
   --wave-glow-y: 47vh;
@@ -45,7 +45,7 @@
 .loading-panel {
   position: absolute;
   background: var(--pastel-margin);
-  will-change: height, width, top, bottom, opacity;
+  will-change: height, width, top, bottom, opacity, transform;
 }
 
 .loading-panel-top {
@@ -78,19 +78,19 @@
 }
 
 .loading-screen.is-flying .loading-panel-top {
-  animation: loading-panel-top-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loading-panel-top-open 920ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-screen.is-flying .loading-panel-bottom {
-  animation: loading-panel-bottom-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loading-panel-bottom-open 920ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-screen.is-flying .loading-panel-left {
-  animation: loading-panel-left-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loading-panel-left-open 920ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-screen.is-flying .loading-panel-right {
-  animation: loading-panel-right-open 760ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: loading-panel-right-open 920ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .loading-screen-inner {
@@ -121,11 +121,13 @@
 }
 
 .loading-screen.is-flying .loading-logo-flight {
-  animation: loading-logo-fly 760ms cubic-bezier(0.74, 0, 0.18, 1) forwards;
+  animation: loading-logo-fly 860ms cubic-bezier(0.68, 0, 0.18, 1) forwards;
 }
 
 .loading-screen.is-flying .loading-logo {
-  animation: loading-logo-scale 760ms cubic-bezier(0.74, 0, 0.18, 1) forwards;
+  animation:
+    loading-logo-scale 860ms cubic-bezier(0.68, 0, 0.18, 1) forwards,
+    loading-logo-color-shift 860ms ease forwards;
 }
 
 .loading-pulse {
@@ -148,11 +150,28 @@
 
 .loading-screen.is-flying .loading-pulse {
   opacity: 0;
-  transition: opacity 180ms ease;
+  transform: translateY(8px) scaleX(0.96);
+  transition: opacity 360ms ease, transform 360ms ease;
 }
 
-.site-shell.is-loading .hero-logo {
+.hero-grid-header > :not(.hero-logo),
+.ascii-rail,
+.hero-identity-band,
+.about-section,
+.projects-section,
+.education-section,
+.resume-section,
+.site-footer {
+  will-change: opacity, transform;
+}
+
+.site-shell.is-loading .hero-logo,
+.site-shell.is-revealing .hero-logo {
   color: transparent;
+}
+
+.site-shell.is-revealing .hero-logo {
+  animation: hero-logo-handoff 720ms ease 520ms forwards;
 }
 
 .site-shell.is-loading .hero-grid-header > :not(.hero-logo),
@@ -178,6 +197,7 @@
 .site-shell.is-revealing .resume-section,
 .site-shell.is-revealing .site-footer {
   opacity: 0;
+  transform: translateY(10px);
   pointer-events: none;
 }
 
@@ -189,7 +209,7 @@
 .site-shell.is-settling .education-section,
 .site-shell.is-settling .resume-section,
 .site-shell.is-settling .site-footer {
-  animation: page-fade-in 620ms ease both;
+  animation: page-fade-in 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .site-shell::before {
@@ -1078,6 +1098,17 @@
   }
 }
 
+@keyframes loading-logo-color-shift {
+  0%,
+  58% {
+    color: #062414;
+  }
+
+  100% {
+    color: var(--paper);
+  }
+}
+
 @keyframes loading-pulse-fill {
   to {
     transform: scaleX(1);
@@ -1115,10 +1146,22 @@
 @keyframes page-fade-in {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
 
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-logo-handoff {
+  0% {
+    color: transparent;
+  }
+
+  100% {
+    color: var(--paper);
   }
 }
 

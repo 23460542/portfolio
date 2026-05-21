@@ -273,9 +273,11 @@ function BinaryTicker({ length = 32 }: { length?: number }) {
 
 function LoadingScreen({
   onFinished,
+  onRevealStart,
   targetRef,
 }: {
   onFinished: () => void
+  onRevealStart: () => void
   targetRef: RefObject<HTMLAnchorElement>
 }) {
   const logoRef = useRef<HTMLDivElement | null>(null)
@@ -316,6 +318,7 @@ function LoadingScreen({
     const flyTimer = window.setTimeout(() => {
       updateTarget()
       setIsFlying(true)
+      onRevealStart()
     }, prefersReducedMotion ? 140 : 980)
     const finishTimer = window.setTimeout(onFinished, prefersReducedMotion ? 460 : 1900)
 
@@ -323,7 +326,7 @@ function LoadingScreen({
       window.clearTimeout(flyTimer)
       window.clearTimeout(finishTimer)
     }
-  }, [onFinished, updateTarget])
+  }, [onFinished, onRevealStart, updateTarget])
 
   return (
     <div className={`loading-screen ${isFlying ? 'is-flying' : ''}`} aria-label="Loading portfolio">
@@ -896,6 +899,7 @@ function App() {
   const logoHomeRef = useRef<HTMLAnchorElement | null>(null)
   const wavePanelRef = useRef<HTMLDivElement | null>(null)
   const [introPhase, setIntroPhase] = useState<IntroPhase>('loading')
+  const [showLoader, setShowLoader] = useState(true)
 
   const updateWaveRiseDistance = useCallback(() => {
     const shell = shellRef.current
@@ -920,10 +924,14 @@ function App() {
     shell.style.setProperty('--wave-mask-ry', `${window.innerHeight * 0.48}px`)
   }, [])
 
-  const finishLoading = useCallback(() => {
+  const startReveal = useCallback(() => {
     updateWaveRiseDistance()
     setIntroPhase('revealing')
   }, [updateWaveRiseDistance])
+
+  const finishLoading = useCallback(() => {
+    setShowLoader(false)
+  }, [])
 
   useLayoutEffect(() => {
     updateWaveRiseDistance()
@@ -952,7 +960,9 @@ function App() {
 
   return (
     <main className={`site-shell is-${introPhase}`} ref={shellRef}>
-      {introPhase === 'loading' ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
+      {showLoader ? (
+        <LoadingScreen onFinished={finishLoading} onRevealStart={startReveal} targetRef={logoHomeRef} />
+      ) : null}
 
       <section className="hero" id="top">
         <header className="hero-grid-header">
