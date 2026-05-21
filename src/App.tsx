@@ -948,6 +948,12 @@ function App() {
       {introPhase === 'loading' ? <LoadingScreen onFinished={finishLoading} targetRef={logoHomeRef} /> : null}
 
       <section className="hero" id="top">
+        <div className="hero-paper-margins" aria-hidden="true">
+          <span className="hero-paper-margin hero-paper-margin-top" />
+          <span className="hero-paper-margin hero-paper-margin-left" />
+          <span className="hero-paper-margin hero-paper-margin-right" />
+        </div>
+
         <header className="hero-grid-header">
           <a href="#top" className="hero-logo" aria-label="Back to top" ref={logoHomeRef}>
             <span className="hero-underline">JT</span>
@@ -955,7 +961,7 @@ function App() {
 
           <div className="hero-status">
             <span className="hero-underline">PORTFOLIO://JAMES_TURNER</span>
-            <span className="hero-underline">UWA / AU</span>
+            <span className="hero-underline">UWA / #23460542</span>
           </div>
 
           <nav className="hero-nav" aria-label="Portfolio sections">
