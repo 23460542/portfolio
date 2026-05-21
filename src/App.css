@@ -154,9 +154,6 @@
 }
 
 .hero {
-  --hero-margin-x: max(8px, calc((100vw - 1420px) / 2));
-  --hero-margin-top: 10px;
-  --hero-paper: rgba(242, 255, 224, 0.92);
   position: relative;
   display: grid;
   width: 100vw;
@@ -164,83 +161,8 @@
   min-height: 720px;
   margin-left: calc(50% - 50vw);
   grid-template-rows: clamp(88px, 10svh, 112px) minmax(0, 1fr) 34px 33svh 34px;
-  padding: var(--hero-margin-top) var(--hero-margin-x) 0;
+  padding: 10px max(8px, calc((100vw - 1420px) / 2)) 10px;
   overflow: hidden;
-}
-
-.hero > :not(.hero-paper-margins) {
-  position: relative;
-}
-
-.hero-paper-margins {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.hero-paper-margin {
-  position: absolute;
-  background: var(--hero-paper);
-  will-change: transform, opacity;
-}
-
-.hero-paper-margin-top {
-  top: 0;
-  right: 0;
-  left: 0;
-  height: var(--hero-margin-top);
-  transform-origin: top;
-}
-
-.hero-paper-margin-left,
-.hero-paper-margin-right {
-  top: 0;
-  bottom: 0;
-  width: var(--hero-margin-x);
-}
-
-.hero-paper-margin-left {
-  left: 0;
-  transform-origin: left;
-}
-
-.hero-paper-margin-right {
-  right: 0;
-  transform-origin: right;
-}
-
-.site-shell.is-loading .hero-paper-margin,
-.site-shell.is-revealing .hero-paper-margin {
-  opacity: 0;
-}
-
-.site-shell.is-loading .hero-paper-margin-top,
-.site-shell.is-revealing .hero-paper-margin-top {
-  transform: translateY(-100%);
-}
-
-.site-shell.is-loading .hero-paper-margin-left,
-.site-shell.is-revealing .hero-paper-margin-left {
-  transform: translateX(-100%);
-}
-
-.site-shell.is-loading .hero-paper-margin-right,
-.site-shell.is-revealing .hero-paper-margin-right {
-  transform: translateX(100%);
-}
-
-.site-shell.is-settling .hero-paper-margin-top {
-  animation: paper-margin-top-slide 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.site-shell.is-settling .hero-paper-margin-left {
-  animation: paper-margin-left-slide 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.site-shell.is-settling .hero-paper-margin-right {
-  animation: paper-margin-right-slide 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .hero > *,
@@ -1113,42 +1035,6 @@
   }
 }
 
-@keyframes paper-margin-top-slide {
-  from {
-    opacity: 0;
-    transform: translateY(-100%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes paper-margin-left-slide {
-  from {
-    opacity: 0;
-    transform: translateX(-100%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes paper-margin-right-slide {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 @keyframes identity-scroll {
   from {
     transform: translateX(0);
@@ -1178,9 +1064,6 @@
   .loading-logo-flight,
   .loading-screen.is-flying .loading-logo-flight,
   .loading-screen.is-flying .loading-logo,
-  .site-shell.is-settling .hero-paper-margin-top,
-  .site-shell.is-settling .hero-paper-margin-left,
-  .site-shell.is-settling .hero-paper-margin-right,
   .site-shell.is-settling .hero-grid-header > :not(.hero-logo),
   .site-shell.is-settling .ascii-rail,
   .site-shell.is-settling .hero-identity-band,
@@ -1206,11 +1089,10 @@
   }
 
   .hero {
-    --hero-margin-x: 7px;
-    --hero-margin-top: 7px;
     height: auto;
     min-height: 820px;
     grid-template-rows: auto minmax(260px, 1fr) 32px minmax(250px, 33svh) 32px;
+    padding: 7px;
   }
 
   .hero-grid-header {
