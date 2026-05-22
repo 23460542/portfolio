@@ -1,16 +1,22 @@
 import {
+  BookOpen,
+  CircuitBoard,
   ExternalLink,
   FileText,
   GitBranch,
+  GraduationCap,
+  Layers3,
   Maximize2,
-  Minus,
   Move,
-  Plus,
-  RotateCcw,
+  Printer,
+  TerminalSquare,
 } from 'lucide-react'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
   type CSSProperties,
   type PointerEvent,
+  type ReactNode,
   type RefObject,
   useCallback,
   useEffect,
@@ -21,6 +27,8 @@ import {
 } from 'react'
 import * as THREE from 'three'
 import './App.css'
+
+gsap.registerPlugin(ScrollTrigger)
 
 type Point = {
   x: number
@@ -39,6 +47,18 @@ type TableRow = {
   signal: string
 }
 
+type StackNode = {
+  id: string
+  label: string
+  x: number
+  y: number
+}
+
+type StackLink = {
+  from: string
+  to: string
+}
+
 type ProjectPanel = {
   id: string
   title: string
@@ -49,12 +69,16 @@ type ProjectPanel = {
   rows: TableRow[]
   accent: string
   position: Point
+  stackNodes: StackNode[]
+  stackLinks: StackLink[]
 }
 
-type EducationItem = {
+type EducationEntry = {
   period: string
   title: string
   detail: string
+  region: 'uwa' | 'waapa' | 'aquinas'
+  logoVariant: 'columns' | 'stage' | 'crest'
 }
 
 type TerminalLine = {
@@ -62,7 +86,15 @@ type TerminalLine = {
   tone: 'command' | 'output'
 }
 
+type TerminalCommand = {
+  command: string
+  output: string[]
+  duration: number
+}
+
 type IntroPhase = 'loading' | 'revealing' | 'settling' | 'ready'
+type StoryScene = 'hero' | 'aboutOpening' | 'about' | 'projectsOpening' | 'projects' | 'educationOpening' | 'education' | 'resumeOpening' | 'resume'
+type StorySectionId = 'about' | 'projects' | 'education' | 'resume'
 
 const terminalTranscript: TerminalLine[] = [
   { text: '$ boot portfolio --ascii', tone: 'command' },
@@ -103,6 +135,19 @@ const projects: ProjectPanel[] = [
       { label: 'topic: fed', value: 'sharpe 1.84', signal: 'WATCH' },
       { label: 'paper pnl', value: '+12.7%', signal: 'LIVE' },
     ],
+    stackNodes: [
+      { id: 'ingest', label: 'Market ingest', x: 14, y: 28 },
+      { id: 'wallets', label: 'Wallet graph', x: 40, y: 18 },
+      { id: 'signals', label: 'Edge scoring', x: 62, y: 42 },
+      { id: 'ui', label: 'React dashboard', x: 32, y: 70 },
+      { id: 'paper', label: 'Paper trades', x: 76, y: 74 },
+    ],
+    stackLinks: [
+      { from: 'ingest', to: 'wallets' },
+      { from: 'wallets', to: 'signals' },
+      { from: 'signals', to: 'paper' },
+      { from: 'signals', to: 'ui' },
+    ],
   },
   {
     id: 'aitrade',
@@ -121,6 +166,19 @@ const projects: ProjectPanel[] = [
       { label: 'BTC/AUD', value: 'long bias', signal: 'GATED' },
       { label: 'risk cap', value: '0.35R', signal: 'PASS' },
       { label: 'audit hash', value: '9af3-21', signal: 'LOCK' },
+    ],
+    stackNodes: [
+      { id: 'model', label: 'Model advice', x: 18, y: 26 },
+      { id: 'risk', label: 'Risk gate', x: 46, y: 22 },
+      { id: 'broker', label: 'Broker adapter', x: 74, y: 40 },
+      { id: 'audit', label: 'Audit trail', x: 34, y: 70 },
+      { id: 'ops', label: 'Ops console', x: 68, y: 76 },
+    ],
+    stackLinks: [
+      { from: 'model', to: 'risk' },
+      { from: 'risk', to: 'broker' },
+      { from: 'risk', to: 'audit' },
+      { from: 'audit', to: 'ops' },
     ],
   },
   {
@@ -141,24 +199,43 @@ const projects: ProjectPanel[] = [
       { label: 'model drift', value: '0.08', signal: 'LOW' },
       { label: 'queue depth', value: '13', signal: 'OK' },
     ],
+    stackNodes: [
+      { id: 'jobs', label: 'Jobs', x: 20, y: 28 },
+      { id: 'events', label: 'Events', x: 48, y: 24 },
+      { id: 'traces', label: 'Traces', x: 70, y: 48 },
+      { id: 'alerts', label: 'Alerts', x: 36, y: 74 },
+      { id: 'health', label: 'Health UI', x: 78, y: 76 },
+    ],
+    stackLinks: [
+      { from: 'jobs', to: 'events' },
+      { from: 'events', to: 'traces' },
+      { from: 'traces', to: 'health' },
+      { from: 'events', to: 'alerts' },
+    ],
   },
 ]
 
-const education: EducationItem[] = [
+const education: EducationEntry[] = [
   {
     period: '2015 -> 2021',
     title: 'Aquinas College',
     detail: 'I was deeply involved in the performing arts, no school day was complete without a couple of hours of rehearsal.',
+    region: 'aquinas',
+    logoVariant: 'crest',
   },
   {
     period: '2022 -> 2022',
     title: 'WAAPA',
     detail: 'Honing my musical talents, I had to learn how to work well in a team.',
+    region: 'waapa',
+    logoVariant: 'stage',
   },
   {
     period: '2023 -> 2027',
     title: 'University of Western Australia',
     detail: 'Majoring in Data Science and Cybersecurity with a minor in German, UWA has kept me busy in all aspects of life.',
+    region: 'uwa',
+    logoVariant: 'columns',
   },
 ]
 
@@ -181,6 +258,50 @@ const resumeLines = [
   'CONTACT',
   'github.com/23460542',
 ]
+
+const commandSequences: Record<Exclude<StoryScene, 'hero' | 'about' | 'projects' | 'education' | 'resume'>, TerminalCommand[]> = {
+  aboutOpening: [
+    { command: 'clear', output: [], duration: 520 },
+    { command: 'open ABOUTME.md', output: ['mounting paper workspace', 'rendering markdown'], duration: 980 },
+  ],
+  projectsOpening: [
+    { command: 'close ABOUTME.md', output: ['saved viewport state'], duration: 620 },
+    { command: 'cd Projects', output: [], duration: 520 },
+    { command: 'git log --oneline --decorate', output: ['9f42c8a polym: wallet edge dashboard', '8ae3b01 AITrade: risk gates and audit trail', '52dd811 atlas.feed: telemetry surface'], duration: 1280 },
+  ],
+  educationOpening: [
+    { command: 'close Projects', output: ['dashboard process detached'], duration: 620 },
+    { command: 'cd ..', output: [], duration: 420 },
+    { command: 'open EDUCATION.md', output: ['loading institutional notes', 'placing placeholder SVG marks'], duration: 1040 },
+  ],
+  resumeOpening: [
+    { command: 'close EDUCATION.md', output: ['paper window collapsed'], duration: 620 },
+    { command: 'lp resume.pdf', output: ['spooling placeholder resume', 'future source: /resume.pdf'], duration: 1120 },
+  ],
+}
+
+const settledSceneByOpening: Record<keyof typeof commandSequences, StoryScene> = {
+  aboutOpening: 'about',
+  projectsOpening: 'projects',
+  educationOpening: 'education',
+  resumeOpening: 'resume',
+}
+
+function getActiveStorySection(scene: StoryScene): StorySectionId {
+  if (scene === 'projects' || scene === 'projectsOpening') {
+    return 'projects'
+  }
+
+  if (scene === 'education' || scene === 'educationOpening') {
+    return 'education'
+  }
+
+  if (scene === 'resume' || scene === 'resumeOpening') {
+    return 'resume'
+  }
+
+  return 'about'
+}
 
 function makeSparkline(values: number[]) {
   const width = 220
@@ -352,9 +473,9 @@ function LoadingScreen({
   )
 }
 
-function AsciiRail() {
+function AsciiRail({ className = '' }: { className?: string }) {
   return (
-    <div className="ascii-rail" aria-hidden="true">
+    <div className={`ascii-rail ${className}`} aria-hidden="true">
       <span className="slash-run">////////////////////////////////////////////////</span>
       <BinaryTicker />
       <span className="slash-run">////////////////////////////////////////////////</span>
@@ -385,6 +506,10 @@ function HeroTerminal() {
 
   return (
     <div className="terminal-panel" aria-hidden="true">
+      <div className="terminal-panel-bar">
+        <TerminalSquare size={16} aria-hidden="true" />
+        <span>portfolio terminal</span>
+      </div>
       <div className="terminal-scroll">
         {transcriptLoops.map((lines, loopIndex) => (
           <div className="terminal-block" key={`terminal-loop-${loopIndex}`}>
@@ -755,146 +880,399 @@ function WaveMeshHero({ introPhase }: { introPhase: IntroPhase }) {
   return <div className="wave-scene" ref={containerRef} />
 }
 
-function SectionHeader({ eyebrow, title }: { eyebrow: string; title: string }) {
+type OpeningScene = keyof typeof commandSequences
+
+function isOpeningScene(scene: StoryScene): scene is OpeningScene {
+  return Object.prototype.hasOwnProperty.call(commandSequences, scene)
+}
+
+function StoryTerminal({ lines, active }: { lines: TerminalLine[]; active: boolean }) {
   return (
-    <div className="section-header">
-      <p>{eyebrow}</p>
-      <h2>{title}</h2>
+    <div className={`story-command-terminal ${active ? 'is-active' : ''}`} aria-live="polite">
+      <div className="story-command-frame">
+        <div className="story-command-bar">
+          <TerminalSquare size={16} aria-hidden="true" />
+          <span>portfolio terminal</span>
+        </div>
+        <div className="story-command-body">
+          {lines.length > 0 ? (
+            lines.map((line, index) => (
+              <span className={`terminal-line terminal-line-${line.tone}`} key={`${line.text}-${index}`}>
+                {line.tone === 'command' ? `$ ${line.text}` : line.text}
+              </span>
+            ))
+          ) : (
+            <span className="terminal-line terminal-line-command">$</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
 
-function ProjectCard({ project }: { project: ProjectPanel }) {
-  const { position, dragging, dragProps } = useDraggable(project.position)
+function SectionSwitcher({
+  activeSection,
+  visible,
+}: {
+  activeSection: StorySectionId
+  visible: boolean
+}) {
+  const sections: Array<{ id: StorySectionId; label: string }> = [
+    { id: 'about', label: 'ABOUT' },
+    { id: 'projects', label: 'PROJECTS' },
+    { id: 'education', label: 'EDUCATION' },
+    { id: 'resume', label: 'RESUME' },
+  ]
+
+  return (
+    <nav className={`section-switcher ${visible ? 'is-visible' : ''}`} aria-label="Portfolio sections">
+      {sections.map((section) => (
+        <a
+          className={activeSection === section.id ? 'is-active' : undefined}
+          href={`#${section.id}`}
+          key={section.id}
+        >
+          {section.label}
+        </a>
+      ))}
+    </nav>
+  )
+}
+
+function FileWindow({
+  children,
+  icon,
+  state = 'open',
+  title,
+  variant = 'paper',
+}: {
+  children: ReactNode
+  icon: ReactNode
+  state?: 'open' | 'closing' | 'dormant'
+  title: string
+  variant?: 'paper' | 'projects' | 'resume'
+}) {
+  return (
+    <section className={`file-window file-window-${variant} is-${state}`} aria-label={title}>
+      <header className="file-window-titlebar">
+        <span>
+          {icon}
+          {title}
+        </span>
+        <span>
+          <Maximize2 size={14} aria-hidden="true" />
+          window
+        </span>
+      </header>
+      <div className="file-window-body">{children}</div>
+    </section>
+  )
+}
+
+function AboutMarkdown() {
+  return (
+    <article className="markdown-paper">
+      <p className="markdown-kicker">ABOUTME.md</p>
+      <h2>James Turner</h2>
+      <p>
+        I always like to put my education into practice. Where that used to mean playing guitar in jazz bars and pubs,
+        now it means turning real-world data into real-world results.
+      </p>
+      <p>
+        My interest in financial markets drives the way I study data science: I like systems that can be inspected,
+        challenged, and improved. That naturally led me toward quant trading tools, large-scale analysis, and machine
+        learning workflows with practical feedback loops.
+      </p>
+      <blockquote>
+        Build the thing, measure the thing, then make the thing easier to trust.
+      </blockquote>
+      <h3>Current focus</h3>
+      <ul>
+        <li>Data science and cybersecurity at UWA.</li>
+        <li>Financial market analysis, risk gates, and signal dashboards.</li>
+        <li>Interfaces that make complex systems feel calm and readable.</li>
+      </ul>
+    </article>
+  )
+}
+
+function ProjectSparkline({ project }: { project: ProjectPanel }) {
   const points = useMemo(() => makeSparkline(project.chart), [project.chart])
 
   return (
-    <article
-      className={`project-card ${dragging ? 'is-dragging' : ''}`}
-      style={
-        {
-          '--panel-x': `${position.x}px`,
-          '--panel-y': `${position.y}px`,
-          '--accent': project.accent,
-        } as CSSProperties
-      }
-    >
-      <header className="project-handle" {...dragProps}>
-        <span className="handle-title">
-          <Move size={14} aria-hidden="true" />
-          {project.title}
-        </span>
-        <span>{project.tag}</span>
-      </header>
+    <svg viewBox="0 0 220 74" role="img" aria-label={`${project.title} trend`}>
+      <polyline points={points} />
+    </svg>
+  )
+}
 
-      <p className="project-summary">{project.summary}</p>
+function ProjectCarousel({ activeIndex, onSelect }: { activeIndex: number; onSelect: (index: number) => void }) {
+  return (
+    <div className="project-carousel" aria-label="Project carousel">
+      {projects.map((project, index) => {
+        const offset = index - activeIndex
+        const distance = Math.abs(offset)
+        const isActive = index === activeIndex
 
-      <div className="metric-grid">
-        {project.metrics.map((metric) => (
-          <div className="metric" key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-            <em>{metric.delta}</em>
-          </div>
-        ))}
-      </div>
+        return (
+          <button
+            className={`carousel-card ${isActive ? 'is-active' : ''}`}
+            key={project.id}
+            onClick={() => onSelect(index)}
+            type="button"
+            style={
+              {
+                '--card-offset': offset,
+                '--card-opacity': Math.max(0.2, 1 - distance * 0.22),
+                '--card-rotate': `${offset * -5}deg`,
+                '--card-scale': Math.max(0.88, 1 - distance * 0.045),
+                '--card-y': `${offset * 238}px`,
+                '--card-z': `${Math.abs(offset) * -64}px`,
+                '--card-stack': projects.length - distance,
+                '--accent': project.accent,
+              } as CSSProperties
+            }
+            aria-current={isActive ? 'true' : undefined}
+          >
+            <span>{project.tag}</span>
+            <h3>{project.title}</h3>
+            <ProjectSparkline project={project} />
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
-      <div className="chart-panel" aria-label={`${project.title} mock trend chart`}>
-        <svg viewBox="0 0 220 74" role="img">
-          <polyline points={points} />
+function TechStackDiagram({ project }: { project: ProjectPanel }) {
+  const { position, dragging, dragProps } = useDraggable({ x: 0, y: 0 })
+  const nodeById = useMemo(() => new Map(project.stackNodes.map((node) => [node.id, node])), [project.stackNodes])
+
+  return (
+    <div className={`tech-map ${dragging ? 'is-dragging' : ''}`}>
+      <div
+        className="tech-map-canvas"
+        style={
+          {
+            '--map-x': `${position.x}px`,
+            '--map-y': `${position.y}px`,
+            '--accent': project.accent,
+          } as CSSProperties
+        }
+        {...dragProps}
+      >
+        <svg className="tech-map-links" viewBox="0 0 100 100" aria-hidden="true">
+          {project.stackLinks.map((link) => {
+            const from = nodeById.get(link.from)
+            const to = nodeById.get(link.to)
+
+            if (!from || !to) {
+              return null
+            }
+
+            return <line key={`${link.from}-${link.to}`} x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+          })}
         </svg>
-      </div>
-
-      <div className="project-table">
-        {project.rows.map((row) => (
-          <div className="project-row" key={row.label}>
-            <span>{row.label}</span>
-            <span>{row.value}</span>
-            <strong>{row.signal}</strong>
-          </div>
+        {project.stackNodes.map((node) => (
+          <span
+            className="tech-node"
+            key={node.id}
+            style={
+              {
+                '--node-x': `${node.x}%`,
+                '--node-y': `${node.y}%`,
+              } as CSSProperties
+            }
+          >
+            {node.label}
+          </span>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function ProjectsWindow({
+  activeIndex,
+  onSelectProject,
+}: {
+  activeIndex: number
+  onSelectProject: (index: number) => void
+}) {
+  const project = projects[activeIndex] ?? projects[0]
+
+  return (
+    <div className="projects-workspace" style={{ '--accent': project.accent } as CSSProperties}>
+      <aside className="projects-dashboard">
+        <div className="dashboard-heading">
+          <Layers3 size={18} aria-hidden="true" />
+          <span>git log</span>
+        </div>
+        <ProjectCarousel activeIndex={activeIndex} onSelect={onSelectProject} />
+        <div className="metric-grid">
+          {project.metrics.map((metric) => (
+            <div className="metric" key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <em>{metric.delta}</em>
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      <div className="project-detail-grid">
+        <article className="project-summary-panel">
+          <p className="markdown-kicker">{project.tag}</p>
+          <h2>{project.title}</h2>
+          <p>{project.summary}</p>
+          <div className="project-table">
+            {project.rows.map((row) => (
+              <div className="project-row" key={row.label}>
+                <span>{row.label}</span>
+                <span>{row.value}</span>
+                <strong>{row.signal}</strong>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="tech-stack-panel">
+          <header>
+            <CircuitBoard size={18} aria-hidden="true" />
+            <span>movable stack map</span>
+            <Move size={14} aria-hidden="true" />
+          </header>
+          <TechStackDiagram project={project} />
+        </article>
+      </div>
+    </div>
+  )
+}
+
+function InstitutionLogo({ variant }: { variant: EducationEntry['logoVariant'] }) {
+  if (variant === 'stage') {
+    return (
+      <svg className="institution-logo" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M10 48h44v8H10z" />
+        <path d="M16 14h32l6 24H10z" />
+        <path d="M22 22h20M18 32h28" />
+      </svg>
+    )
+  }
+
+  if (variant === 'crest') {
+    return (
+      <svg className="institution-logo" viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 8 52 16v14c0 13-8 22-20 28C20 52 12 43 12 30V16z" />
+        <path d="M22 25h20M32 18v30" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg className="institution-logo" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M8 52h48M12 18h40L32 8zM16 22v24M28 22v24M40 22v24M52 22v24" />
+    </svg>
+  )
+}
+
+function EducationCard({ entry }: { entry: EducationEntry }) {
+  return (
+    <article className={`education-card education-card-${entry.region}`}>
+      <header>
+        <InstitutionLogo variant={entry.logoVariant} />
+        <div>
+          <span>{entry.period}</span>
+          <h3>{entry.title}</h3>
+        </div>
+      </header>
+      <p>{entry.detail}</p>
+    </article>
+  )
+}
+
+function EducationWindow() {
+  const educationByRegion = useMemo(
+    () =>
+      education.reduce(
+        (entries, entry) => ({
+          ...entries,
+          [entry.region]: entry,
+        }),
+        {} as Record<EducationEntry['region'], EducationEntry>,
+      ),
+    [],
+  )
+
+  return (
+    <div className="education-paper-grid">
+      <EducationCard entry={educationByRegion.uwa} />
+      <div className="education-right-column">
+        <EducationCard entry={educationByRegion.waapa} />
+        <EducationCard entry={educationByRegion.aquinas} />
+      </div>
+    </div>
+  )
+}
+
+function ResumeWindow({ resumeSource = null }: { resumeSource?: string | null }) {
+  return (
+    <div className="resume-paper-shell" data-resume-source={resumeSource ?? 'placeholder'}>
+      {resumeSource ? (
+        <object className="resume-pdf-slot" data={resumeSource} type="application/pdf">
+          <ResumePlaceholder />
+        </object>
+      ) : (
+        <ResumePlaceholder />
+      )}
+    </div>
+  )
+}
+
+function ResumePlaceholder() {
+  return (
+    <article className="resume-document-scroll">
+      {resumeLines.map((line, index) =>
+        line ? (
+          <p key={`${line}-${index}`}>{line}</p>
+        ) : (
+          <div className="resume-gap" key={`gap-${index}`} aria-hidden="true" />
+        ),
+      )}
+      <div className="resume-future-note">
+        <Printer size={16} aria-hidden="true" />
+        <span>Placeholder render. The component can swap to a real PDF through the resumeSource prop.</span>
       </div>
     </article>
   )
 }
 
-function ProjectsBoard() {
-  return (
-    <div className="projects-board">
-      <div className="board-grid" aria-hidden="true" />
-      {projects.map((project) => (
-        <ProjectCard project={project} key={project.id} />
-      ))}
-    </div>
-  )
-}
-
-function ResumeViewer() {
-  const initialPosition = { x: 72, y: 54 }
-  const [zoom, setZoom] = useState(0.92)
-  const { position, setPosition, dragging, dragProps } = useDraggable(initialPosition)
-
-  function changeZoom(amount: number) {
-    setZoom((current) => Math.min(1.38, Math.max(0.72, Number((current + amount).toFixed(2)))))
+function TransitionGhost({ scene }: { scene: StoryScene }) {
+  if (scene === 'projectsOpening') {
+    return (
+      <FileWindow icon={<BookOpen size={16} aria-hidden="true" />} state="closing" title="ABOUTME.md">
+        <AboutMarkdown />
+      </FileWindow>
+    )
   }
 
-  function resetViewer() {
-    setPosition(initialPosition)
-    setZoom(0.92)
+  if (scene === 'educationOpening') {
+    return (
+      <FileWindow icon={<Layers3 size={16} aria-hidden="true" />} state="closing" title="Projects/git-log.dashboard" variant="projects">
+        <ProjectsWindow activeIndex={0} onSelectProject={() => undefined} />
+      </FileWindow>
+    )
   }
 
-  return (
-    <div className="resume-stage">
-      <div className="palm palm-left" aria-hidden="true" />
-      <div className="palm palm-right" aria-hidden="true" />
+  if (scene === 'resumeOpening') {
+    return (
+      <FileWindow icon={<GraduationCap size={16} aria-hidden="true" />} state="closing" title="EDUCATION.md">
+        <EducationWindow />
+      </FileWindow>
+    )
+  }
 
-      <div className="viewer-toolbar" aria-label="Resume viewer controls">
-        <button type="button" onClick={() => changeZoom(-0.08)} aria-label="Zoom out">
-          <Minus size={16} />
-        </button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => changeZoom(0.08)} aria-label="Zoom in">
-          <Plus size={16} />
-        </button>
-        <button type="button" onClick={resetViewer} aria-label="Reset resume viewer">
-          <RotateCcw size={16} />
-        </button>
-      </div>
-
-      <section
-        className={`resume-window ${dragging ? 'is-dragging' : ''}`}
-        style={
-          {
-            '--resume-x': `${position.x}px`,
-            '--resume-y': `${position.y}px`,
-            '--resume-zoom': zoom,
-          } as CSSProperties
-        }
-        aria-label="Placeholder resume viewer"
-      >
-        <header className="resume-handle" {...dragProps}>
-          <span>
-            <FileText size={15} aria-hidden="true" />
-            resume.pdf
-          </span>
-          <span>
-            <Maximize2 size={14} aria-hidden="true" />
-            drag / zoom
-          </span>
-        </header>
-
-        <div className="resume-document">
-          {resumeLines.map((line, index) =>
-            line ? (
-              <p key={`${line}-${index}`}>{line}</p>
-            ) : (
-              <div className="resume-gap" key={`gap-${index}`} aria-hidden="true" />
-            ),
-          )}
-        </div>
-      </section>
-    </div>
-  )
+  return null
 }
 
 function App() {
@@ -903,6 +1281,33 @@ function App() {
   const wavePanelRef = useRef<HTMLDivElement | null>(null)
   const [introPhase, setIntroPhase] = useState<IntroPhase>('loading')
   const [showLoader, setShowLoader] = useState(true)
+  const [storyScene, setStoryScene] = useState<StoryScene>('hero')
+  const [terminalLines, setTerminalLines] = useState<TerminalLine[]>([])
+  const [activeProjectIndex, setActiveProjectIndex] = useState(0)
+  const [heroHandoffActive, setHeroHandoffActive] = useState(false)
+
+  const scrollToProject = useCallback((index: number) => {
+    const shell = shellRef.current
+    const projectsSection = shell?.querySelector<HTMLElement>('.projects-scene')
+    const boundedIndex = Math.max(0, Math.min(projects.length - 1, index))
+    const projectStop = shell?.querySelector<HTMLElement>(`.project-scroll-stop[data-project-index="${boundedIndex}"]`)
+
+    if (projectStop) {
+      const top = projectStop.getBoundingClientRect().top + window.scrollY
+      window.scrollTo({ top, behavior: 'smooth' })
+      return
+    }
+
+    if (!projectsSection) {
+      return
+    }
+
+    const travel = Math.max(projectsSection.offsetHeight - window.innerHeight, 1)
+    const ratio = projects.length > 1 ? boundedIndex / (projects.length - 1) : 0
+    const top = projectsSection.getBoundingClientRect().top + window.scrollY + travel * ratio
+
+    window.scrollTo({ top, behavior: 'smooth' })
+  }, [])
 
   const updateWaveRiseDistance = useCallback(() => {
     const shell = shellRef.current
@@ -961,11 +1366,224 @@ function App() {
     return undefined
   }, [introPhase])
 
+  useEffect(() => {
+    if (!isOpeningScene(storyScene)) {
+      if (storyScene === 'hero') {
+        setTerminalLines([])
+      }
+
+      return undefined
+    }
+
+    const timers: number[] = []
+    let elapsed = 140
+
+    setTerminalLines([])
+
+    commandSequences[storyScene].forEach((command) => {
+      timers.push(
+        window.setTimeout(() => {
+          setTerminalLines((lines) => [...lines, { text: command.command, tone: 'command' }])
+        }, elapsed),
+      )
+
+      if (command.output.length > 0) {
+        timers.push(
+          window.setTimeout(() => {
+            setTerminalLines((lines) => [
+              ...lines,
+              ...command.output.map((text) => ({ text, tone: 'output' as const })),
+            ])
+          }, elapsed + Math.min(320, command.duration * 0.34)),
+        )
+      }
+
+      elapsed += command.duration
+    })
+
+    timers.push(
+      window.setTimeout(() => {
+        setStoryScene(settledSceneByOpening[storyScene])
+      }, elapsed + 180),
+    )
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [storyScene])
+
+  useLayoutEffect(() => {
+    const shell = shellRef.current
+
+    if (!shell || showLoader) {
+      return undefined
+    }
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    const context = gsap.context(() => {
+      const hero = shell.querySelector<HTMLElement>('.hero')
+      const header = shell.querySelector<HTMLElement>('.hero-grid-header')
+      const wave = shell.querySelector<HTMLElement>('.hero-wave-panel')
+      const marquee = shell.querySelector<HTMLElement>('.identity-marquee')
+      const bottomRail = shell.querySelector<HTMLElement>('.ascii-rail-bottom')
+      const scrollStory = shell.querySelector<HTMLElement>('.scroll-story')
+      const storyStage = shell.querySelector<HTMLElement>('.story-stage')
+
+      if (hero && header && wave && marquee && bottomRail) {
+        const handoffThreshold = 0.72
+
+        const heroTimeline = gsap.timeline({
+          defaults: { ease: 'none' },
+          scrollTrigger: {
+            trigger: hero,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: prefersReducedMotion ? false : 0.55,
+            onEnter: () => setStoryScene('hero'),
+            onUpdate: (self) => {
+              const nextHandoffActive = self.progress > handoffThreshold
+
+              setHeroHandoffActive((current) => {
+                return current === nextHandoffActive ? current : nextHandoffActive
+              })
+
+              if (!nextHandoffActive) {
+                setStoryScene((current) => (current === 'hero' ? current : 'hero'))
+              }
+
+              if (self.progress > 0.985) {
+                setStoryScene((current) => (current === 'hero' ? 'aboutOpening' : current))
+              }
+            },
+            onLeave: () => {
+              setHeroHandoffActive(true)
+              setStoryScene((current) => (current === 'hero' ? 'aboutOpening' : current))
+            },
+            onLeaveBack: () => setHeroHandoffActive(false),
+          },
+        })
+
+        heroTimeline
+          .to(marquee, { autoAlpha: 0, duration: 0.42, scale: 0.96 }, 0.08)
+          .to(hero, { '--hero-frame-x': '0px', duration: 0.48 }, 0.38)
+          .to(wave, { autoAlpha: 0.72, duration: 0.36, yPercent: -7 }, 0.44)
+          .to(header, { autoAlpha: 0, duration: 0.24, yPercent: -112 }, 0.76)
+      }
+
+      const activateOpening = (opening: OpeningScene) => {
+        setStoryScene((current) =>
+          current === opening || current === settledSceneByOpening[opening] ? current : opening,
+        )
+      }
+
+      const sectionScenes: Array<[string, OpeningScene]> = [
+        ['.about-scene', 'aboutOpening'],
+        ['.projects-scene', 'projectsOpening'],
+        ['.education-scene', 'educationOpening'],
+        ['.resume-scene', 'resumeOpening'],
+      ]
+
+      sectionScenes.forEach(([selector, opening]) => {
+        const section = shell.querySelector<HTMLElement>(selector)
+
+        if (!section) {
+          return
+        }
+
+        ScrollTrigger.create({
+          trigger: section,
+          start: 'top top',
+          end: 'bottom top',
+          onEnter: () => activateOpening(opening),
+          onEnterBack: () => activateOpening(opening),
+        })
+      })
+
+      if (scrollStory && storyStage) {
+        ScrollTrigger.create({
+          trigger: scrollStory,
+          start: 'top top',
+          end: 'bottom bottom',
+          pin: storyStage,
+          pinSpacing: false,
+          anticipatePin: 1,
+          onEnter: () => {
+            setHeroHandoffActive(true)
+            activateOpening('aboutOpening')
+          },
+          onEnterBack: () => {
+            setHeroHandoffActive(true)
+            activateOpening('aboutOpening')
+          },
+          onLeaveBack: () => {
+            setHeroHandoffActive(window.scrollY > window.innerHeight * 0.72)
+          },
+        })
+      }
+
+      const projectsSection = shell.querySelector<HTMLElement>('.projects-scene')
+
+      if (projectsSection) {
+        ScrollTrigger.create({
+          trigger: projectsSection,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: true,
+          onUpdate: (self) => {
+            const nextIndex = Math.min(projects.length - 1, Math.round(self.progress * (projects.length - 1)))
+            setActiveProjectIndex(nextIndex)
+          },
+        })
+      }
+
+      ScrollTrigger.create({
+        trigger: shell,
+        start: 0,
+        end: () => ScrollTrigger.maxScroll(window),
+        snap: prefersReducedMotion
+          ? undefined
+          : {
+              delay: 0.12,
+              duration: { min: 0.24, max: 0.64 },
+              ease: 'power2.out',
+              snapTo: (progress) => {
+                const maxScroll = Math.max(ScrollTrigger.maxScroll(window), 1)
+                const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
+                const snapPoints = [0, ...anchors.map((anchor) => (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll)]
+                  .sort((a, b) => a - b)
+                  .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
+
+                return gsap.utils.snap(snapPoints, progress)
+              },
+            },
+      })
+    }, shell)
+
+    document.fonts?.ready.then(() => ScrollTrigger.refresh()).catch(() => undefined)
+
+    return () => context.revert()
+  }, [showLoader])
+
+  const storyActive = storyScene !== 'hero'
+  const chromeVisible = storyActive || heroHandoffActive
+  const activeSection = getActiveStorySection(storyScene)
+
   return (
-    <main className={`site-shell is-${introPhase} ${showLoader ? 'has-loader' : ''}`} ref={shellRef}>
+    <main
+      className={`site-shell is-${introPhase} ${showLoader ? 'has-loader' : ''} ${
+        storyActive ? 'is-story-active' : ''
+      }`}
+      ref={shellRef}
+    >
       {showLoader ? (
         <LoadingScreen onFinished={finishLoading} onRevealStart={startReveal} targetRef={logoHomeRef} />
       ) : null}
+
+      <a className={`floating-logo ${chromeVisible ? 'is-visible' : ''}`} href="#top" aria-label="Back to top">
+        JT
+      </a>
+      <SectionSwitcher activeSection={activeSection} visible={chromeVisible} />
 
       <section className="hero" id="top">
         <header className="hero-grid-header">
@@ -1011,50 +1629,80 @@ function App() {
           <WaveMeshHero introPhase={introPhase} />
         </div>
 
-        <AsciiRail />
-        <HeroIdentityBand />
-        <AsciiRail />
-      </section>
-
-      <section className="about-section" id="about">
-        <SectionHeader eyebrow="00_about" title="READ(about)ME.md" />
-        <div className="about-copy">
-          <p>
-            I always like to put my education into practice; where that used to mean playing my guitar 
-            in jazz bars and pubs, now I turn real-world data into real-world results. 
-          </p>
-          <p>
-            With my interest in financial markets driving my data science studies, it was only natural 
-            that I would start building quant trading applications, leveraging large-scale data analysis 
-            techniques and machine learning. 
-          </p>
+        <div className="hero-story-stack">
+          <AsciiRail className="ascii-rail-top" />
+          <HeroIdentityBand />
+          <AsciiRail className="ascii-rail-bottom" />
         </div>
       </section>
 
-      <section className="projects-section" id="projects">
-        <SectionHeader eyebrow="01_projects" title="SUMMARISE COMMITS (projects)" />
-        <ProjectsBoard />
-      </section>
+      <div className="scroll-story">
+        <div className="story-stage">
+          <div className="story-viewport">
+            <StoryTerminal active={storyActive} lines={terminalLines} />
+            <TransitionGhost scene={storyScene} />
 
-      <section className="education-section" id="education">
-        <SectionHeader eyebrow="02_education" title="COLLABORATION(at university).md" />
-        <div className="education-list">
-          {education.map((item) => (
-            <article className="education-item" key={`${item.period}-${item.title}`}>
-              <span>{item.period}</span>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
-            </article>
+            <div className="scene-layer">
+              <FileWindow
+                icon={<BookOpen size={16} aria-hidden="true" />}
+                state={storyScene === 'about' ? 'open' : 'dormant'}
+                title="ABOUTME.md"
+              >
+                <AboutMarkdown />
+              </FileWindow>
+            </div>
+
+            <div className="scene-layer">
+              <FileWindow
+                icon={<Layers3 size={16} aria-hidden="true" />}
+                state={storyScene === 'projects' ? 'open' : 'dormant'}
+                title="Projects/git-log.dashboard"
+                variant="projects"
+              >
+                <ProjectsWindow activeIndex={activeProjectIndex} onSelectProject={scrollToProject} />
+              </FileWindow>
+            </div>
+
+            <div className="scene-layer">
+              <FileWindow
+                icon={<GraduationCap size={16} aria-hidden="true" />}
+                state={storyScene === 'education' ? 'open' : 'dormant'}
+                title="EDUCATION.md"
+              >
+                <EducationWindow />
+              </FileWindow>
+            </div>
+
+            <div className="scene-layer">
+              <FileWindow
+                icon={<FileText size={16} aria-hidden="true" />}
+                state={storyScene === 'resume' ? 'open' : 'dormant'}
+                title="resume.pdf"
+                variant="resume"
+              >
+                <ResumeWindow />
+              </FileWindow>
+            </div>
+          </div>
+        </div>
+
+        <section className="story-section about-scene snap-anchor" id="about" aria-label="About scene" />
+        <section className="story-section projects-scene" aria-label="Projects scene">
+          {projects.map((project, index) => (
+            <div
+              aria-hidden="true"
+              className="project-scroll-stop snap-anchor"
+              data-project-index={index}
+              id={index === 0 ? 'projects' : undefined}
+              key={project.id}
+            />
           ))}
-        </div>
-      </section>
+        </section>
+        <section className="story-section education-scene snap-anchor" id="education" aria-label="Education scene" />
+        <section className="story-section resume-scene snap-anchor" id="resume" aria-label="Resume scene" />
+      </div>
 
-      <section className="resume-section" id="resume">
-        <SectionHeader eyebrow="03_resume" title="Viewer panel." />
-        <ResumeViewer />
-      </section>
-
-      <footer className="site-footer">
+      <footer className="site-footer snap-anchor">
         <a href="https://github.com/23460542" target="_blank" rel="noreferrer">
           <GitBranch size={16} aria-hidden="true" />
           github.com/23460542
