@@ -30,6 +30,64 @@ import './App.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
+const SCENE_SNAP_COMMIT = 0.24
+const SCENE_SNAP_DELAY = 0.06
+
+function buildPageSnapPoints(maxScroll: number) {
+  const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
+
+  return [
+    0,
+    ...anchors.map((anchor) =>
+      gsap.utils.clamp(0, 1, (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
+}
+
+function resolveAggressiveSceneSnap(
+  progress: number,
+  points: number[],
+  direction: number,
+  commitRatio = SCENE_SNAP_COMMIT,
+) {
+  if (points.length === 0) {
+    return progress
+  }
+
+  if (points.length === 1 || progress <= points[0]) {
+    return points[0]
+  }
+
+  const lastPoint = points[points.length - 1]
+
+  if (progress >= lastPoint) {
+    return lastPoint
+  }
+
+  const segmentIndex = points.findIndex((point) => point > progress) - 1
+  const start = points[Math.max(0, segmentIndex)]
+  const end = points[Math.max(1, segmentIndex + 1)]
+  const span = end - start
+
+  if (span <= 0) {
+    return start
+  }
+
+  const localProgress = (progress - start) / span
+
+  if (direction > 0) {
+    return localProgress >= commitRatio ? end : start
+  }
+
+  if (direction < 0) {
+    return localProgress <= 1 - commitRatio ? start : end
+  }
+
+  return localProgress >= 0.5 ? end : start
+}
+
 type Point = {
   x: number
   y: number
@@ -1445,7 +1503,7 @@ function App() {
             trigger: hero,
             start: 'top top',
             end: 'bottom top',
-            scrub: prefersReducedMotion ? false : 0.55,
+            scrub: prefersReducedMotion ? false : true,
             onEnter: () => setStoryScene('hero'),
             onUpdate: (self) => {
               const nextHandoffActive = self.progress > handoffThreshold
@@ -1564,22 +1622,16 @@ function App() {
         snap: prefersReducedMotion
           ? undefined
           : {
-              delay: 0.12,
-              duration: { min: 0.24, max: 0.64 },
-              ease: 'power2.out',
-              snapTo: (progress) => {
+              directional: false,
+              inertia: false,
+              delay: SCENE_SNAP_DELAY,
+              duration: { min: 0.16, max: 0.42 },
+              ease: 'power4.out',
+              snapTo: (progress, self) => {
                 const maxScroll = Math.max(ScrollTrigger.maxScroll(window), 1)
-                const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
-                const snapPoints = [
-                  0,
-                  ...anchors.map((anchor) =>
-                    gsap.utils.clamp(0, 1, (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll),
-                  ),
-                ]
-                  .sort((a, b) => a - b)
-                  .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
+                const snapPoints = buildPageSnapPoints(maxScroll)
 
-                return gsap.utils.snap(snapPoints, progress)
+                return resolveAggressiveSceneSnap(progress, snapPoints, self?.direction ?? 0)
               },
             },
       })
