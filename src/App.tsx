@@ -1403,7 +1403,13 @@ function App() {
 
     timers.push(
       window.setTimeout(() => {
-        setStoryScene(settledSceneByOpening[storyScene])
+        const settledScene = settledSceneByOpening[storyScene]
+
+        if (settledScene === 'projects') {
+          setActiveProjectIndex(0)
+        }
+
+        setStoryScene(settledScene)
       }, elapsed + 180),
     )
 
@@ -1471,32 +1477,43 @@ function App() {
           .to(header, { autoAlpha: 0, duration: 0.24, yPercent: -112 }, 0.76)
       }
 
-      const activateOpening = (opening: OpeningScene) => {
-        setStoryScene((current) =>
-          current === opening || current === settledSceneByOpening[opening] ? current : opening,
-        )
-      }
-
       const sectionScenes: Array<[string, OpeningScene]> = [
         ['.about-scene', 'aboutOpening'],
         ['.projects-scene', 'projectsOpening'],
         ['.education-scene', 'educationOpening'],
         ['.resume-scene', 'resumeOpening'],
       ]
-
-      sectionScenes.forEach(([selector, opening]) => {
+      const sectionEntries = sectionScenes.flatMap(([selector, opening]) => {
         const section = shell.querySelector<HTMLElement>(selector)
 
-        if (!section) {
-          return
-        }
+        return section ? [{ opening, section, selector }] : []
+      })
+      const openingForScrollPosition = () => {
+        const scrollTop = window.scrollY
 
+        return sectionEntries.reduce<OpeningScene | null>((activeOpening, { opening, section }) => {
+          const sectionTop = section.getBoundingClientRect().top + window.scrollY
+
+          return sectionTop <= scrollTop ? opening : activeOpening
+        }, null)
+      }
+
+      const activateOpening = (opening: OpeningScene, source: string) => {
+        const shouldResolveFromScroll = !source.startsWith('.') || !source.endsWith(':enterBack')
+        const resolvedOpening = shouldResolveFromScroll ? openingForScrollPosition() ?? opening : opening
+
+        setStoryScene((current) =>
+          current === resolvedOpening || current === settledSceneByOpening[resolvedOpening] ? current : resolvedOpening,
+        )
+      }
+
+      sectionEntries.forEach(({ opening, section, selector }) => {
         ScrollTrigger.create({
           trigger: section,
           start: 'top top',
           end: 'bottom top',
-          onEnter: () => activateOpening(opening),
-          onEnterBack: () => activateOpening(opening),
+          onEnter: () => activateOpening(opening, `${selector}:enter`),
+          onEnterBack: () => activateOpening(opening, `${selector}:enterBack`),
         })
       })
 
@@ -1510,11 +1527,11 @@ function App() {
           anticipatePin: 1,
           onEnter: () => {
             setHeroHandoffActive(true)
-            activateOpening('aboutOpening')
+            activateOpening('aboutOpening', 'scroll-story:enter')
           },
           onEnterBack: () => {
             setHeroHandoffActive(true)
-            activateOpening('aboutOpening')
+            activateOpening('aboutOpening', 'scroll-story:enterBack')
           },
           onLeaveBack: () => {
             setHeroHandoffActive(window.scrollY > window.innerHeight * 0.72)
@@ -1531,7 +1548,10 @@ function App() {
           end: 'bottom bottom',
           scrub: true,
           onUpdate: (self) => {
-            const nextIndex = Math.min(projects.length - 1, Math.round(self.progress * (projects.length - 1)))
+            const nextIndex =
+              self.progress >= 1
+                ? projects.length - 1
+                : Math.min(projects.length - 1, Math.floor(self.progress * projects.length))
             setActiveProjectIndex(nextIndex)
           },
         })
@@ -1550,7 +1570,12 @@ function App() {
               snapTo: (progress) => {
                 const maxScroll = Math.max(ScrollTrigger.maxScroll(window), 1)
                 const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
-                const snapPoints = [0, ...anchors.map((anchor) => (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll)]
+                const snapPoints = [
+                  0,
+                  ...anchors.map((anchor) =>
+                    gsap.utils.clamp(0, 1, (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll),
+                  ),
+                ]
                   .sort((a, b) => a - b)
                   .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
 
