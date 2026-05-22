@@ -30,6 +30,78 @@ import './App.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
+const SCENE_SNAP_COMMIT = 0.42
+const SCENE_SNAP_DELAY = 0.2
+
+function buildPageSnapPoints(maxScroll: number) {
+  const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
+
+  return [
+    0,
+    ...anchors.map((anchor) =>
+      gsap.utils.clamp(0, 1, (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll),
+    ),
+  ]
+    .sort((a, b) => a - b)
+    .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
+}
+
+function resolveThresholdSnap(
+  progress: number,
+  points: number[],
+  direction: number,
+  commitRatio = SCENE_SNAP_COMMIT,
+) {
+  if (points.length === 0) {
+    return progress
+  }
+
+  if (points.length === 1) {
+    return points[0]
+  }
+
+  if (progress <= points[0]) {
+    return points[0]
+  }
+
+  const lastPoint = points[points.length - 1]
+
+  if (progress >= lastPoint) {
+    return lastPoint
+  }
+
+  let segmentIndex = 0
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    if (progress < points[index + 1]) {
+      segmentIndex = index
+      break
+    }
+
+    segmentIndex = index
+  }
+
+  const start = points[segmentIndex]
+  const end = points[segmentIndex + 1]
+  const span = end - start
+
+  if (span <= 0) {
+    return start
+  }
+
+  const local = (progress - start) / span
+
+  if (!direction) {
+    return local >= 0.5 ? end : start
+  }
+
+  if (direction > 0) {
+    return local >= commitRatio ? end : start
+  }
+
+  return local <= 1 - commitRatio ? start : end
+}
+
 type Point = {
   x: number
   y: number
@@ -1445,7 +1517,7 @@ function App() {
             trigger: hero,
             start: 'top top',
             end: 'bottom top',
-            scrub: prefersReducedMotion ? false : 0.55,
+            scrub: prefersReducedMotion ? false : true,
             onEnter: () => setStoryScene('hero'),
             onUpdate: (self) => {
               const nextHandoffActive = self.progress > handoffThreshold
@@ -1564,22 +1636,15 @@ function App() {
         snap: prefersReducedMotion
           ? undefined
           : {
-              delay: 0.12,
-              duration: { min: 0.24, max: 0.64 },
-              ease: 'power2.out',
-              snapTo: (progress) => {
+              directional: false,
+              delay: SCENE_SNAP_DELAY,
+              duration: { min: 0.32, max: 0.82 },
+              ease: 'power3.inOut',
+              snapTo: (progress, self) => {
                 const maxScroll = Math.max(ScrollTrigger.maxScroll(window), 1)
-                const anchors = gsap.utils.toArray<HTMLElement>('.snap-anchor')
-                const snapPoints = [
-                  0,
-                  ...anchors.map((anchor) =>
-                    gsap.utils.clamp(0, 1, (anchor.getBoundingClientRect().top + window.scrollY) / maxScroll),
-                  ),
-                ]
-                  .sort((a, b) => a - b)
-                  .filter((point, index, points) => index === 0 || Math.abs(point - points[index - 1]) > 0.003)
+                const snapPoints = buildPageSnapPoints(maxScroll)
 
-                return gsap.utils.snap(snapPoints, progress)
+                return resolveThresholdSnap(progress, snapPoints, self?.direction ?? 0)
               },
             },
       })
